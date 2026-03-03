@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/charts/loader.js"></script>
 
-
   <style>
+    /* Seu CSS existente permanece EXATAMENTE igual */
     :root {
       --primary: #4361ee;
       --success: #2ec4b6;
@@ -2123,11 +2123,32 @@
     let abaAtiva = localStorage.getItem('abaAtiva') || 'dashboard';
     let currentMonth = parseInt(localStorage.getItem('currentMonth')) || new Date().getMonth() + 1;
     let currentYear = parseInt(localStorage.getItem('currentYear')) || new Date().getFullYear();
-    let configApp = { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [] };
+    let configApp = { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
     let filtroCardManual = "";
     let filtroTitularManual = "";
     let confirmDeleteCallback = null;
     let editingRow = null;
+
+    // URL da API do Google Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycbz-lTUdB8uZF7eEMqUbtm7tb2by56U3RERI1BbvFEA-dvTjHDzMqIBO6vVsig45WT4LCg/exec";
+
+    // Função auxiliar para chamar a API
+    async function callAppsScript(acao, dados = {}) {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acao, dados })
+        });
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        return data;
+      } catch (error) {
+        console.error('Erro na chamada API:', error);
+        throw error;
+      }
+    }
 
     // Funções de utilidade
     function showLoading() {
@@ -2193,11 +2214,11 @@
       modal.show();
     }
 
+    // Função de navegação
     function nav(view) {
-      // Mapeia as novas abas para o container de análise se necessário
       let targetView = view;
       if (['geral', 'cartoes', 'receitas'].includes(view)) {
-        targetView = 'geral'; // Todas usam o mesmo container de análise
+        targetView = 'geral';
         abaAtiva = view;
         localStorage.setItem('abaAtiva', abaAtiva);
       }
@@ -2237,7 +2258,6 @@
         carregarConfigs();
       }
 
-      // Controle de visibilidade do botão Atualizar Cartões
       const btnAtf = document.getElementById('btn-atualizar-faturas');
       if (btnAtf) btnAtf.style.display = (view === 'geral') ? 'block' : 'none';
 
@@ -2247,7 +2267,6 @@
     }
 
     function mostrarFormContextual() {
-      // Abre o formulário correto baseado na aba ativa
       if (abaAtiva === 'geral') mostrarForm('geral');
       else if (abaAtiva === 'cartoes') mostrarForm('cartao');
       else if (abaAtiva === 'receitas') mostrarForm('receita');
@@ -2292,13 +2311,10 @@
       }
     }
 
-    // Controle do novo Modal de Período
-    let anoModalAtivo = 2024;
     function abrirModalPeriodo() {
       anoModalAtivo = currentYear;
       document.getElementById('ano-modal').innerText = anoModalAtivo;
 
-      // Marcar mês atual como ativo visualmente
       document.querySelectorAll('.month-item').forEach((el, idx) => {
         el.classList.toggle('active', (idx + 1) === currentMonth && anoModalAtivo === currentYear);
       });
@@ -2307,11 +2323,10 @@
       modal.show();
     }
 
+    let anoModalAtivo = 2024;
     function mudarAnoModal(d) {
       anoModalAtivo += d;
       document.getElementById('ano-modal').innerText = anoModalAtivo;
-
-      // Atualizar destaque dos meses se o ano mudar
       document.querySelectorAll('.month-item').forEach((el, idx) => {
         el.classList.toggle('active', (idx + 1) === currentMonth && anoModalAtivo === currentYear);
       });
@@ -2351,59 +2366,37 @@
       const n = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
       document.getElementById('lblMes').innerText = n[currentMonth - 1];
       document.getElementById('lblAno').innerText = currentYear;
-
-      const vencMesAno = document.getElementById('venc-mes-ano');
-      if (vencMesAno) {
-        vencMesAno.innerText = `${("0" + currentMonth).slice(-2)}/${currentYear}`;
-      }
-
-      const recMesAno = document.getElementById('rec-mes-ano');
-      if (recMesAno) {
-        recMesAno.innerText = `${("0" + currentMonth).slice(-2)}/${currentYear}`;
-      }
     }
 
-    function onDateSelected(value) {
-      if (!value) return;
-      const parts = value.split('-');
-      currentYear = parseInt(parts[0]);
-      currentMonth = parseInt(parts[1]);
-
-      updateDateDisplay();
-      renderizarTabelaEAnalise();
-      if (document.getElementById('view-dashboard').classList.contains('active')) {
-        atualizarDashboard();
-      }
-    }
-
-    function carregar() {
+    // Função principal de carregamento
+    async function carregar() {
       showLoading();
+      try {
+        const data = await callAppsScript('carregarDadosIniciais', { 
+          mes: currentMonth, 
+          ano: currentYear 
+        });
+        
+        dReceitas = data.receitas || [];
+        dGeral = data.geral || [];
+        dCartoes = data.cartoes || [];
+        
+        const notesArea = document.getElementById('dashboard-notes');
+        if (notesArea) notesArea.value = data.notaDashboard || "";
 
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(res => {
-          dReceitas = res.receitas || [];
-          dGeral = res.geral || [];
-          dCartoes = res.cartoes || [];
-
-          // Carregar notas do dashboard
-          const notesArea = document.getElementById('dashboard-notes');
-          if (notesArea) notesArea.value = res.notaDashboard || "";
-
-          hideLoading();
-          renderizarTabelaEAnalise();
-          if (document.getElementById('view-dashboard').classList.contains('active')) {
-            atualizarDashboard();
-          }
-          if (document.getElementById('view-radar').classList.contains('active')) {
-            renderizarRadarFinanceiro();
-          }
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          console.error('Erro ao carregar:', error);
-          showToast('Erro ao carregar dados: ' + error.message, 'danger');
-        })
-        .carregarDadosIniciais();
+        renderizarTabelaEAnalise();
+        if (document.getElementById('view-dashboard').classList.contains('active')) {
+          atualizarDashboard();
+        }
+        if (document.getElementById('view-radar').classList.contains('active')) {
+          renderizarRadarFinanceiro();
+        }
+      } catch (error) {
+        console.error('Erro ao carregar:', error);
+        showToast('Erro ao carregar dados: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
     function renderizarTabelaEAnalise() {
@@ -2496,7 +2489,6 @@
         return new Date(x.vencimentoIso || x.recebimentoIso || '2000-01-01') - new Date(y.vencimentoIso || y.recebimentoIso || '2000-01-01');
       });
 
-      // Garantir que os gráficos e o extrato sejam redesenhados apenas se o dashboard estiver visível
       if (document.getElementById('view-dashboard').classList.contains('active')) {
         drawTitularChart(pTit);
         drawStatusChart(tPag, tAbe);
@@ -2571,7 +2563,7 @@
                 <td>
                   <select class="inline-edit-select" id="edit-cat-${i.linha}">
                     <option value="" ${!i.categoria ? 'selected' : ''}>Sem Categoria</option>
-                    ${configApp.categorias.map(c =>
+                    ${(configApp.categorias || []).map(c =>
               `<option value="${c.label}" ${c.label === i.categoria ? 'selected' : ''}>${c.label}</option>`
             ).join('')}
                   </select>
@@ -2630,7 +2622,7 @@
               <tr class="editing-row" data-linha="${i.linha}">
                 <td>
                   <select class="inline-edit-select" id="edit-cartao-${i.linha}">
-                    ${configApp.cartoes.map(c =>
+                    ${(configApp.cartoes || []).map(c =>
               `<option value="${c.nome}|${c.titular}|${c.diaVencimento || '10'}" ${c.nome === i.cartao && c.titular === i.titular ? 'selected' : ''}>${c.nome} (${c.titular})</option>`
             ).join('')}
                   </select>
@@ -2681,7 +2673,6 @@
         renderizarRadarFinanceiro();
       }
       gerarProjecao();
-      // Gráficos agora são chamados condicionalmente acima ou via redimensionamento automático se necessário
     }
 
     // Funções de edição inline
@@ -2734,7 +2725,7 @@
       renderizarTabelaEAnalise();
     }
 
-    function salvarEdicaoInlineCartao(linha) {
+    async function salvarEdicaoInlineCartao(linha) {
       const cartaoSelect = document.getElementById(`edit-cartao-${linha}`);
       const descInput = document.getElementById(`edit-desc-${linha}`);
       const catInput = document.getElementById(`edit-cat-${linha}`);
@@ -2759,7 +2750,7 @@
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
 
-      const d = {
+      const dados = {
         linha: linha,
         cartao: nomeCartao,
         titular: titularCartao,
@@ -2770,21 +2761,19 @@
       };
 
       showLoading();
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(() => {
-          hideLoading();
-          showToast('Cartão editado com sucesso!', 'success');
-          editingRow = null;
-          carregar();
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          showToast('Erro ao editar: ' + error.message, 'danger');
-        })
-        .salvarEdicaoCartao(d);
+      try {
+        await callAppsScript('editarCartao', dados);
+        showToast('Cartão editado com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
-    function salvarEdicaoInlineGeral(linha) {
+    async function salvarEdicaoInlineGeral(linha) {
       const descInput = document.getElementById(`edit-desc-${linha}`);
       const valInput = document.getElementById(`edit-val-${linha}`);
       const tituSelect = document.getElementById(`edit-titu-${linha}`);
@@ -2804,7 +2793,7 @@
         return;
       }
 
-      const d = {
+      const dados = {
         linha: linha,
         descricao: descricao,
         categoria: categoria,
@@ -2814,21 +2803,19 @@
       };
 
       showLoading();
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(() => {
-          hideLoading();
-          showToast('Item editado com sucesso!', 'success');
-          editingRow = null;
-          carregar();
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          showToast('Erro ao editar: ' + error.message, 'danger');
-        })
-        .salvarDespesa(d);
+      try {
+        await callAppsScript('editarDespesa', dados);
+        showToast('Item editado com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
-    function salvarEdicaoInlineReceita(linha) {
+    async function salvarEdicaoInlineReceita(linha) {
       const descInput = document.getElementById(`edit-desc-${linha}`);
       const valInput = document.getElementById(`edit-val-${linha}`);
       const tituSelect = document.getElementById(`edit-titu-${linha}`);
@@ -2846,7 +2833,7 @@
 
       const recebimento = editingRow.item.recebimentoIso;
 
-      const d = {
+      const dados = {
         linha: linha,
         descricao: descricao,
         valor: valor,
@@ -2855,18 +2842,16 @@
       };
 
       showLoading();
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(() => {
-          hideLoading();
-          showToast('Receita editada com sucesso!', 'success');
-          editingRow = null;
-          carregar();
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          showToast('Erro ao editar: ' + error.message, 'danger');
-        })
-        .salvarReceita(d);
+      try {
+        await callAppsScript('editarReceita', dados);
+        showToast('Receita editada com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
     document.addEventListener('keydown', function (e) {
@@ -2917,100 +2902,99 @@
       document.getElementById('totalDespGeral').innerText = formatarMoeda(despTotal);
       document.getElementById('totalFaturas').innerText = formatarMoeda(tFat);
       document.getElementById('totalSobras').innerText = formatarMoeda(tRec - despTotal);
+    }
 
-      function sugerirCategoria(desc) {
-        const d = (desc || '').toLowerCase();
-        const catInput = document.getElementById('cat-c');
-        if (!configApp.categorias) return;
+    function sugerirCategoria(desc) {
+      const d = (desc || '').toLowerCase();
+      const catInput = document.getElementById('cat-c');
+      if (!configApp.categorias) return;
 
-        for (const cat of configApp.categorias) {
-          const keywords = (cat.keywords || '').split(',').map(k => k.trim().toLowerCase());
-          if (keywords.some(k => k && d.includes(k))) {
-            catInput.value = cat.label;
-            return;
+      for (const cat of configApp.categorias) {
+        const keywords = (cat.keywords || '').split(',').map(k => k.trim().toLowerCase());
+        if (keywords.some(k => k && d.includes(k))) {
+          catInput.value = cat.label;
+          return;
+        }
+      }
+      catInput.value = '';
+    }
+
+    window.sugerirCategoria = sugerirCategoria;
+
+    function getIconByDescription(desc) {
+      const d = (desc || '').toLowerCase();
+      if (d.includes('mercado') || d.includes('supermercado') || d.includes('feira')) return 'fa-cart-shopping';
+      if (d.includes('combustivel') || d.includes('gasolina') || d.includes('posto') || d.includes('carro')) return 'fa-gas-pump';
+      if (d.includes('energia') || d.includes('luz') || d.includes('celpa') || d.includes('equatorial')) return 'fa-bolt';
+      if (d.includes('agua') || d.includes('cosanpa')) return 'fa-droplet';
+      if (d.includes('internet') || d.includes('wifi') || d.includes('netflix') || d.includes('spotify') || d.includes('assina')) return 'fa-globe';
+      if (d.includes('aluguel') || d.includes('casa') || d.includes('condominio')) return 'fa-house';
+      if (d.includes('saude') || d.includes('farmacia') || d.includes('medico') || d.includes('unimed')) return 'fa-heart-pulse';
+      if (d.includes('lanche') || d.includes('pizza') || d.includes('ifes') || d.includes('restaurante') || d.includes('ifood')) return 'fa-utensils';
+      if (d.includes('cartao') || d.includes('fatura') || d.includes('nubank') || d.includes('inter') || d.includes('mercado pago')) return 'fa-credit-card';
+      if (d.includes('transferencia') || d.includes('pix') || d.includes('pagamento')) return 'fa-money-bill-transfer';
+      return 'fa-dollar-sign';
+    }
+
+    const extratoBody = document.getElementById('corpoExtratoDashboard');
+    if (extratoBody) {
+      extratoBody.innerHTML = "";
+      const dadosMes = dGeral.filter(i =>
+        (i.competencia === compSelecionada) ||
+        (i.status === 'Em aberto' && i.vencimentoIso < hojeIso)
+      );
+
+      if (dadosMes.length === 0) {
+        extratoBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sem despesas este mês</td></tr>';
+      } else {
+        dadosMes.sort((a, b) => {
+          if (a.status !== b.status) {
+            return a.status === 'Em aberto' ? -1 : 1;
           }
-        }
-        catInput.value = ''; // Clear if no match
-      }
+          const dateA = a.vencimentoIso || '2000-01-01';
+          const dateB = b.vencimentoIso || '2000-01-01';
+          return dateA.localeCompare(dateB);
+        }).forEach(i => {
+          const dia = (i.vencimento || '00/00/0000').split('/')[0];
+          let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
+          let labelStatus = i.status || '';
+          let dateLabel = `Dia ${dia}`;
 
-      window.sugerirCategoria = sugerirCategoria;
-
-      function getIconByDescription(desc) {
-        const d = (desc || '').toLowerCase();
-        if (d.includes('mercado') || d.includes('supermercado') || d.includes('feira')) return 'fa-cart-shopping';
-        if (d.includes('combustivel') || d.includes('gasolina') || d.includes('posto') || d.includes('carro')) return 'fa-gas-pump';
-        if (d.includes('energia') || d.includes('luz') || d.includes('celpa') || d.includes('equatorial')) return 'fa-bolt';
-        if (d.includes('agua') || d.includes('cosanpa')) return 'fa-droplet';
-        if (d.includes('internet') || d.includes('wifi') || d.includes('netflix') || d.includes('spotify') || d.includes('assina')) return 'fa-globe';
-        if (d.includes('aluguel') || d.includes('casa') || d.includes('condominio')) return 'fa-house';
-        if (d.includes('saude') || d.includes('farmacia') || d.includes('medico') || d.includes('unimed')) return 'fa-heart-pulse';
-        if (d.includes('lanche') || d.includes('pizza') || d.includes('ifes') || d.includes('restaurante') || d.includes('ifood')) return 'fa-utensils';
-        if (d.includes('cartao') || d.includes('fatura') || d.includes('nubank') || d.includes('inter') || d.includes('mercado pago')) return 'fa-credit-card';
-        if (d.includes('transferencia') || d.includes('pix') || d.includes('pagamento')) return 'fa-money-bill-transfer';
-        return 'fa-dollar-sign';
-      }
-
-      const extratoBody = document.getElementById('corpoExtratoDashboard');
-      if (extratoBody) {
-        extratoBody.innerHTML = "";
-        const dadosMes = dGeral.filter(i =>
-          (i.competencia === compSelecionada) ||
-          (i.status === 'Em aberto' && i.vencimentoIso < hojeIso)
-        );
-
-        if (dadosMes.length === 0) {
-          extratoBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sem despesas este mês</td></tr>';
-        } else {
-          dadosMes.sort((a, b) => {
-            if (a.status !== b.status) {
-              return a.status === 'Em aberto' ? -1 : 1;
+          if (i.status === 'Em aberto') {
+            if (i.vencimentoIso < hojeIso) {
+              statusClass = 'status-vencida';
+              labelStatus = 'Vencida';
+              dateLabel = `Venceu em ${i.vencimento}`;
+            } else if (i.vencimentoIso === hojeIso) {
+              statusClass = 'status-hoje';
+              labelStatus = 'Hoje';
             }
-            const dateA = a.vencimentoIso || '2000-01-01';
-            const dateB = b.vencimentoIso || '2000-01-01';
-            return dateA.localeCompare(dateB);
-          }).forEach(i => {
-            const dia = (i.vencimento || '00/00/0000').split('/')[0];
-            let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
-            let labelStatus = i.status || '';
-            let dateLabel = `Dia ${dia}`;
+          }
 
-            if (i.status === 'Em aberto') {
-              if (i.vencimentoIso < hojeIso) {
-                statusClass = 'status-vencida';
-                labelStatus = 'Vencida';
-                dateLabel = `Venceu em ${i.vencimento}`;
-              } else if (i.vencimentoIso === hojeIso) {
-                statusClass = 'status-hoje';
-                labelStatus = 'Hoje';
-              }
-            }
-
-            extratoBody.innerHTML += `
-              <tr>
-                <td class="align-middle">
-                  <div class="d-flex align-items-center gap-3">
-                    <div class="icon-circle">
-                      <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
-                    </div>
-                    <div>
-                      <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''}</div>
-                      <small class="text-muted">${dateLabel}</small>
-                    </div>
+          extratoBody.innerHTML += `
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="icon-circle">
+                    <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
                   </div>
-                </td>
-                <td class="align-middle text-end" style="white-space: nowrap;">
-                  <div class="fw-bold" style="font-size:0.9rem">${formatarMoeda(i.valor)}</div>
-                  <div class="mt-1">
-                    <span class="${statusClass}" style="font-size:0.65rem; padding: 2px 6px;">${labelStatus}</span>
+                  <div>
+                    <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''}</div>
+                    <small class="text-muted">${dateLabel}</small>
                   </div>
-                </td>
-              </tr>`;
-          });
-        }
+                </div>
+              </td>
+              <td class="align-middle text-end" style="white-space: nowrap;">
+                <div class="fw-bold" style="font-size:0.9rem">${formatarMoeda(i.valor)}</div>
+                <div class="mt-1">
+                  <span class="${statusClass}" style="font-size:0.65rem; padding: 2px 6px;">${labelStatus}</span>
+                </div>
+              </td>
+            </tr>`;
+        });
       }
     }
 
-    // --- RADAR FINANCEIRO DO SCRIPT PROVIDO ---
     function renderizarRadarFinanceiro() {
       if (!dGeral) return;
 
@@ -3023,7 +3007,6 @@
       let despEstiloVida = 0;
       let totalDesp = 0;
 
-      // Categorias essenciais
       const categoriasEssenciais = ['Mercado', 'Transporte', 'Saúde', 'Moradia', 'Educação', 'Energia', 'Água', 'Internet'];
 
       dGeral.forEach(i => {
@@ -3038,7 +3021,6 @@
         }
       });
 
-      // Saúde Financeira: Receita vs Despesa
       let score = 0;
       if (tRec > 0) {
         const proporcao = (totalDesp / tRec);
@@ -3053,18 +3035,15 @@
         barEl.className = 'progress-bar ' + (score > 70 ? 'bg-success' : score > 40 ? 'bg-primary' : 'bg-danger');
       }
 
-      // Potencial de Economia (Estilo de Vida)
       const savingsPotential = despEstiloVida * 0.2;
       document.getElementById('radar-savings-potential').innerText = formatarMoeda(savingsPotential);
 
-      // Limite de Gastos (80% da receita como limite ideal)
       let limitUsage = 0;
       if (tRec > 0) {
         limitUsage = (totalDesp / (tRec * 0.8)) * 100;
       }
       document.getElementById('radar-spending-limit').innerText = Math.round(limitUsage) + "%";
 
-      // Insights
       const insightsList = document.getElementById('radar-insights-list');
       if (insightsList) {
         insightsList.innerHTML = "";
@@ -3103,7 +3082,6 @@
 
       drawRadarChartDistribution(despEssencial, despEstiloVida);
 
-      // Tendência
       const trendBar = document.getElementById('radar-trend-bar');
       const trendMsg = document.getElementById('radar-trend-message');
       if (trendBar && trendMsg) {
@@ -3311,7 +3289,7 @@
       document.getElementById('val-r').value = "";
       document.getElementById('parc-r').value = "1";
       document.getElementById('desc-c').value = "";
-      document.getElementById('cat-c').value = ""; // Clear new category field
+      document.getElementById('cat-c').value = "";
       document.getElementById('val-c').value = "";
       document.getElementById('parc-c').value = "1";
 
@@ -3400,10 +3378,10 @@
       if (!i) return;
       document.getElementById('linha-edit-c').value = i.linha;
       document.getElementById('desc-c').value = i.descricao;
-      document.getElementById('cat-c').value = i.categoria || ''; // Set new category field
+      document.getElementById('cat-c').value = i.categoria || '';
       document.getElementById('val-c').value = i.valor;
 
-      const cartaoConfig = configApp.cartoes.find(c => c.nome === i.cartao);
+      const cartaoConfig = (configApp.cartoes || []).find(c => c.nome === i.cartao);
       const diaVencimento = cartaoConfig ? cartaoConfig.diaVencimento : '10';
 
       document.getElementById('cartao-c').value = i.cartao + "|" + i.titular + "|" + diaVencimento;
@@ -3411,7 +3389,7 @@
       setEditState('btn-c', 'box-c');
     }
 
-    function salvar() {
+    async function salvar() {
       const linhaEdit = document.getElementById('linha-edit').value;
       const descricao = document.getElementById('desc').value;
       const valor = document.getElementById('val').value;
@@ -3428,7 +3406,7 @@
         return;
       }
 
-      const d = {
+      const dados = {
         linha: linhaEdit,
         descricao: descricao,
         categoria: categoria,
@@ -3439,21 +3417,23 @@
       };
 
       showLoading();
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(() => {
-          hideLoading();
-          showToast('Despesa salva com sucesso!', 'success');
-          fecharForms();
-          carregar();
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          showToast('Erro ao salvar: ' + error.message, 'danger');
-        })
-        .salvarDespesa(d);
+      try {
+        if (linhaEdit) {
+          await callAppsScript('editarDespesa', dados);
+        } else {
+          await callAppsScript('salvarDespesa', dados);
+        }
+        showToast('Despesa salva com sucesso!', 'success');
+        fecharForms();
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao salvar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
-    function salvarReceita() {
+    async function salvarReceita() {
       const linhaEdit = document.getElementById('linha-edit-r').value;
       const descricao = document.getElementById('desc-r').value;
       const valor = document.getElementById('val-r').value;
@@ -3469,7 +3449,7 @@
         return;
       }
 
-      const d = {
+      const dados = {
         linha: linhaEdit,
         descricao: descricao,
         valor: valor,
@@ -3479,21 +3459,23 @@
       };
 
       showLoading();
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(() => {
-          hideLoading();
-          showToast('Receita salva com sucesso!', 'success');
-          fecharForms();
-          carregar();
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          showToast('Erro ao salvar: ' + error.message, 'danger');
-        })
-        .salvarReceita(d);
+      try {
+        if (linhaEdit) {
+          await callAppsScript('editarReceita', dados);
+        } else {
+          await callAppsScript('salvarReceita', dados);
+        }
+        showToast('Receita salva com sucesso!', 'success');
+        fecharForms();
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao salvar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
-    function salvarCartao() {
+    async function salvarCartao() {
       const linhaEdit = document.getElementById('linha-edit-c').value;
       const cartaoInfo = document.getElementById('cartao-c').value.split('|');
       const descricao = document.getElementById('desc-c').value;
@@ -3512,7 +3494,7 @@
         return;
       }
 
-      const d = {
+      const dados = {
         linha: linhaEdit,
         cartao: nomeCartao,
         titular: titularCartao,
@@ -3524,171 +3506,143 @@
       };
 
       showLoading();
-      if (linhaEdit) {
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(() => {
-            hideLoading();
-            showToast('Cartão editado com sucesso!', 'success');
-            fecharForms();
-            carregar();
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro ao editar: ' + error.message, 'danger');
-          })
-          .salvarEdicaoCartao(d);
-      } else {
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(() => {
-            hideLoading();
-            showToast('Cartão lançado com sucesso!', 'success');
-            fecharForms();
-            carregar();
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro ao salvar: ' + error.message, 'danger');
-          })
-          .lancarParcelas(d, "CARTOES", d.cartao, d.titular);
+      try {
+        if (linhaEdit) {
+          await callAppsScript('editarCartao', dados);
+        } else {
+          await callAppsScript('lancarParcelas', dados);
+        }
+        showToast('Cartão lançado com sucesso!', 'success');
+        fecharForms();
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao salvar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
       }
     }
 
-    function atualizarFaturaAtual() {
+    async function atualizarFaturaAtual() {
       const competencia = ("0" + currentMonth).slice(-2) + "/" + currentYear;
 
       showActionModal(
         `Deseja atualizar as faturas para a competência ${competencia}? 
         Isso vai recalcular todos os valores de cartões para este mês.`,
-        function () {
+        async function () {
           showLoading();
-          fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-            .withSuccessHandler(res => {
-              hideLoading();
-              if (res.success) {
-                showToast(`Faturas atualizadas! ${res.inseridos} inseridos, ${res.atualizados} atualizados.`, 'success');
-                carregar();
-              } else {
-                showToast('Erro ao atualizar: ' + res.error, 'danger');
-              }
-            })
-            .withFailureHandler(error => {
-              hideLoading();
-              showToast('Erro ao atualizar: ' + error.message, 'danger');
-            })
-            .atualizarFaturaCompetencia(competencia);
+          try {
+            const res = await callAppsScript('atualizarFaturaCompetencia', { competencia });
+            showToast(`Faturas atualizadas! ${res.inseridos} inseridos, ${res.atualizados} atualizados.`, 'success');
+            await carregar();
+          } catch (error) {
+            showToast('Erro ao atualizar: ' + error.message, 'danger');
+          } finally {
+            hideLoading();
+          }
         },
         'payment'
       );
     }
 
-    function pagar(l) {
+    async function pagar(l) {
       const item = dGeral.find(x => x.linha === l);
       if (!item) return;
 
-      showActionModal(`Deseja marcar "${item.descricao}" como pago?`, function () {
+      showActionModal(`Deseja marcar "${item.descricao}" como pago?`, async function () {
         showLoading();
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(() => {
-            hideLoading();
-            showToast('Item marcado como pago!', 'success');
-            carregar();
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro: ' + error.message, 'danger');
-          })
-          .marcarComoPago(l);
+        try {
+          await callAppsScript('marcarComoPago', { linha: l });
+          showToast('Item marcado como pago!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
       }, 'payment');
     }
 
-    function reverter(l) {
+    async function reverter(l) {
       const item = dGeral.find(x => x.linha === l);
       if (!item) return;
 
-      showActionModal(`Deseja reverter "${item.descricao}" para "Em aberto"?`, function () {
+      showActionModal(`Deseja reverter "${item.descricao}" para "Em aberto"?`, async function () {
         showLoading();
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(() => {
-            hideLoading();
-            showToast('Item revertido para em aberto!', 'success');
-            carregar();
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro: ' + error.message, 'danger');
-          })
-          .reverterPagamento(l);
+        try {
+          await callAppsScript('reverterPagamento', { linha: l });
+          showToast('Item revertido para em aberto!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
       }, 'revert');
     }
 
-    function excluirDesp(l) {
+    async function excluirDesp(l) {
       const item = dGeral.find(x => x.linha === l);
       if (!item) return;
 
-      showActionModal(`Deseja realmente excluir "${item.descricao}"?`, function () {
+      showActionModal(`Deseja realmente excluir "${item.descricao}"?`, async function () {
         showLoading();
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(() => {
-            hideLoading();
-            showToast('Item excluído com sucesso!', 'success');
-            carregar();
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro ao excluir: ' + error.message, 'danger');
-          })
-          .excluirDespesa(l);
+        try {
+          await callAppsScript('excluirDespesa', { linha: l });
+          showToast('Item excluído com sucesso!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro ao excluir: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
       }, 'delete');
     }
 
-    function excluirRec(l) {
+    async function excluirRec(l) {
       const item = dReceitas.find(x => x.linha === l);
       if (!item) return;
 
-      showActionModal(`Deseja realmente excluir a receita "${item.descricao}"?`, function () {
+      showActionModal(`Deseja realmente excluir a receita "${item.descricao}"?`, async function () {
         showLoading();
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(() => {
-            hideLoading();
-            showToast('Receita excluída com sucesso!', 'success');
-            carregar();
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro ao excluir: ' + error.message, 'danger');
-          })
-          .excluirReceita(l);
+        try {
+          await callAppsScript('excluirReceita', { linha: l });
+          showToast('Receita excluída com sucesso!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro ao excluir: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
       }, 'delete');
     }
 
-    function excluirCartao(l) {
+    async function excluirCartao(l) {
       const item = dCartoes.find(x => x.linha === l);
       if (!item) return;
 
-      showActionModal(`Deseja realmente excluir "${item.descricao}" do cartão ${item.cartao}?`, function () {
+      showActionModal(`Deseja realmente excluir "${item.descricao}" do cartão ${item.cartao}?`, async function () {
         showLoading();
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(() => {
-            hideLoading();
-            showToast('Gasto excluído com sucesso!', 'success');
-            carregar();
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro ao excluir: ' + error.message, 'danger');
-          })
-          .excluirGastoCartao(l);
+        try {
+          await callAppsScript('excluirGastoCartao', { linha: l });
+          showToast('Gasto excluído com sucesso!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro ao excluir: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
       }, 'delete');
     }
 
-    function carregarConfigs() {
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(res => {
-          configApp = res;
-          renderizarConfigScreen();
-          atualizarSelectsDinamicos();
-        })
-        .buscarConfigs();
+    async function carregarConfigs() {
+      try {
+        const res = await callAppsScript('buscarConfigs');
+        configApp = res;
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+      } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+      }
     }
 
     function renderizarConfigScreen() {
@@ -3766,7 +3720,7 @@
       }
     }
 
-    function deleteConfig(tipo, valor) {
+    async function deleteConfig(tipo, valor) {
       let mensagem;
       if (tipo === 'titulares') {
         mensagem = `Deseja realmente remover o titular "${valor}"?`;
@@ -3778,21 +3732,19 @@
         mensagem = `Deseja realmente remover a categoria "${cat ? cat.label : valor}"?`;
       }
 
-      showActionModal(mensagem, function () {
+      showActionModal(mensagem, async function () {
         showLoading();
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(res => {
-            hideLoading();
-            configApp = res;
-            renderizarConfigScreen();
-            atualizarSelectsDinamicos();
-            showToast("Removido com sucesso!", "success");
-          })
-          .withFailureHandler(error => {
-            hideLoading();
-            showToast('Erro: ' + error.message, 'danger');
-          })
-          .removerConfigItem(tipo, valor);
+        try {
+          const res = await callAppsScript('removerConfigItem', { tipo, valor });
+          configApp = res;
+          renderizarConfigScreen();
+          atualizarSelectsDinamicos();
+          showToast("Removido com sucesso!", "success");
+        } catch (error) {
+          showToast('Erro: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
       }, 'delete');
     }
 
@@ -3846,22 +3798,22 @@
 
     window.toggleVisibility = toggleVisibility;
 
-    window.salvarEdicaoConfig = function (tipo, linha, valor) {
+    async function salvarEdicaoConfig(tipo, linha, valor) {
       showLoading();
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(res => {
-          hideLoading();
-          configApp = res;
-          renderizarConfigScreen();
-          atualizarSelectsDinamicos();
-          showToast("Alterado com sucesso!");
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          showToast("Erro: " + error.message, "danger");
-        })
-        .editarConfigItem(tipo, linha, valor);
+      try {
+        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor });
+        configApp = res;
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+        showToast("Alterado com sucesso!");
+      } catch (error) {
+        showToast("Erro: " + error.message, "danger");
+      } finally {
+        hideLoading();
+      }
     }
+
+    window.salvarEdicaoConfig = salvarEdicaoConfig;
 
     window.confirmarEdicaoCartao = function (linha, container) {
       const inputs = container.querySelectorAll('input, select');
@@ -3877,7 +3829,7 @@
 
     window.iniciarEdicaoConfig = iniciarEdicaoConfig;
 
-    function addConfig(tipo, idInput) {
+    async function addConfig(tipo, idInput) {
       let valor;
       if (Array.isArray(idInput)) {
         valor = idInput.map(id => document.getElementById(id).value);
@@ -3891,25 +3843,23 @@
       }
 
       showLoading();
-      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-        .withSuccessHandler(res => {
-          hideLoading();
-          configApp = res;
-          renderizarConfigScreen();
-          atualizarSelectsDinamicos();
-          showToast("Configuração salva!");
+      try {
+        const res = await callAppsScript('salvarConfigItem', { tipo, valor });
+        configApp = res;
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+        showToast("Configuração salva!");
 
-          if (Array.isArray(idInput)) {
-            idInput.forEach(id => document.getElementById(id).value = "");
-          } else {
-            document.getElementById(idInput).value = "";
-          }
-        })
-        .withFailureHandler(error => {
-          hideLoading();
-          showToast('Erro: ' + error.message, 'danger');
-        })
-        .salvarConfigItem(tipo, valor);
+        if (Array.isArray(idInput)) {
+          idInput.forEach(id => document.getElementById(id).value = "");
+        } else {
+          document.getElementById(idInput).value = "";
+        }
+      } catch (error) {
+        showToast('Erro: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
     window.onload = function () {
@@ -3964,44 +3914,45 @@
         let timeout;
         notesArea.addEventListener('input', () => {
           clearTimeout(timeout);
-          timeout = setTimeout(() => {
+          timeout = setTimeout(async () => {
             const status = document.getElementById('notes-status');
             if (status) {
               status.innerText = "Salvando...";
               status.classList.add('visible');
             }
-            fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-              .withSuccessHandler(() => {
-                if (status) {
-                  status.innerText = "Salvo!";
-                  setTimeout(() => status.classList.remove('visible'), 2000);
-                }
-              })
-              .salvarNotaDashboard(notesArea.value);
+            try {
+              await callAppsScript('salvarNotaDashboard', { nota: notesArea.value });
+              if (status) {
+                status.innerText = "Salvo!";
+                setTimeout(() => status.classList.remove('visible'), 2000);
+              }
+            } catch (error) {
+              if (status) {
+                status.innerText = "Erro!";
+              }
+            }
           }, 1000);
         });
       }
 
-      setTimeout(function () {
-        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
-          .withSuccessHandler(function (res) {
-            configApp = res;
-            renderizarConfigScreen();
-            atualizarSelectsDinamicos();
-          })
-          .withFailureHandler(function (error) {
-            console.error('Erro ao carregar configurações:', error);
-          })
-          .buscarConfigs();
+      setTimeout(async function () {
+        try {
+          const res = await callAppsScript('buscarConfigs');
+          configApp = res;
+          renderizarConfigScreen();
+          atualizarSelectsDinamicos();
+        } catch (error) {
+          console.error('Erro ao carregar configurações:', error);
+        }
       }, 500);
     };
+
     function toggleTheme() {
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
       updateThemeIcon(isDark);
 
-      // Redesenha os gráficos para atualizar cores de texto
       if (typeof renderizarTabelaEAnalise === 'function') {
         renderizarTabelaEAnalise();
       }
