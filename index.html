@@ -2113,10 +2113,8 @@
 
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(
-        'https://SkullBullet333.github.io/meu-app-pwa/service-worker.js'
-      )
-      .then(() => console.log("Service Worker registrado"));
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log("Service Worker registrado"));
     }
     google.charts.load('current', { 'packages': ['corechart'] });
 
