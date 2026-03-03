@@ -2379,7 +2379,7 @@
     function carregar() {
       showLoading();
 
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(res => {
           dReceitas = res.receitas || [];
           dGeral = res.geral || [];
@@ -2770,7 +2770,7 @@
       };
 
       showLoading();
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(() => {
           hideLoading();
           showToast('Cartão editado com sucesso!', 'success');
@@ -2814,7 +2814,7 @@
       };
 
       showLoading();
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(() => {
           hideLoading();
           showToast('Item editado com sucesso!', 'success');
@@ -2855,7 +2855,7 @@
       };
 
       showLoading();
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(() => {
           hideLoading();
           showToast('Receita editada com sucesso!', 'success');
@@ -3439,7 +3439,7 @@
       };
 
       showLoading();
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(() => {
           hideLoading();
           showToast('Despesa salva com sucesso!', 'success');
@@ -3479,7 +3479,7 @@
       };
 
       showLoading();
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(() => {
           hideLoading();
           showToast('Receita salva com sucesso!', 'success');
@@ -3525,7 +3525,7 @@
 
       showLoading();
       if (linhaEdit) {
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(() => {
             hideLoading();
             showToast('Cartão editado com sucesso!', 'success');
@@ -3538,7 +3538,7 @@
           })
           .salvarEdicaoCartao(d);
       } else {
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(() => {
             hideLoading();
             showToast('Cartão lançado com sucesso!', 'success');
@@ -3561,7 +3561,7 @@
         Isso vai recalcular todos os valores de cartões para este mês.`,
         function () {
           showLoading();
-          fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+          fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
             .withSuccessHandler(res => {
               hideLoading();
               if (res.success) {
@@ -3587,7 +3587,7 @@
 
       showActionModal(`Deseja marcar "${item.descricao}" como pago?`, function () {
         showLoading();
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(() => {
             hideLoading();
             showToast('Item marcado como pago!', 'success');
@@ -3607,7 +3607,7 @@
 
       showActionModal(`Deseja reverter "${item.descricao}" para "Em aberto"?`, function () {
         showLoading();
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(() => {
             hideLoading();
             showToast('Item revertido para em aberto!', 'success');
@@ -3627,7 +3627,7 @@
 
       showActionModal(`Deseja realmente excluir "${item.descricao}"?`, function () {
         showLoading();
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(() => {
             hideLoading();
             showToast('Item excluído com sucesso!', 'success');
@@ -3647,7 +3647,7 @@
 
       showActionModal(`Deseja realmente excluir a receita "${item.descricao}"?`, function () {
         showLoading();
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(() => {
             hideLoading();
             showToast('Receita excluída com sucesso!', 'success');
@@ -3667,7 +3667,7 @@
 
       showActionModal(`Deseja realmente excluir "${item.descricao}" do cartão ${item.cartao}?`, function () {
         showLoading();
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(() => {
             hideLoading();
             showToast('Gasto excluído com sucesso!', 'success');
@@ -3682,7 +3682,7 @@
     }
 
     function carregarConfigs() {
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(res => {
           configApp = res;
           renderizarConfigScreen();
@@ -3780,7 +3780,7 @@
 
       showActionModal(mensagem, function () {
         showLoading();
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(res => {
             hideLoading();
             configApp = res;
@@ -3848,7 +3848,7 @@
 
     window.salvarEdicaoConfig = function (tipo, linha, valor) {
       showLoading();
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(res => {
           hideLoading();
           configApp = res;
@@ -3891,7 +3891,7 @@
       }
 
       showLoading();
-      fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+      fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
         .withSuccessHandler(res => {
           hideLoading();
           configApp = res;
@@ -3970,7 +3970,7 @@
               status.innerText = "Salvando...";
               status.classList.add('visible');
             }
-            fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+            fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
               .withSuccessHandler(() => {
                 if (status) {
                   status.innerText = "Salvo!";
@@ -3983,7 +3983,7 @@
       }
 
       setTimeout(function () {
-        fetch("URL_DO_SEU_APPS_SCRIPT", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
+        fetch("https://script.google.com/macros/s/AKfycbysiiBk5PCFRjexhUeIA9QCYcLfS7L_lljX_8Uo8vLIztNKedpz0Gcf0-OJWHuaMEjrCQ/exec", {   method: "POST",   headers: {     "Content-Type": "application/json"   },   body: JSON.stringify({     acao: "salvarDespesa",     dados: dados   }) }) .then(res => res.json()) .then(data => {   console.log(data); });
           .withSuccessHandler(function (res) {
             configApp = res;
             renderizarConfigScreen();
