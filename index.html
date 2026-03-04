@@ -2883,10 +2883,14 @@
               <td>${i.parcela || ''}</td>
               <td>${formatarMoeda(i.valor)}</td>
               <td>
-                ${i.status === 'Em aberto' ?
-                `<button class="btn-action" style="color:var(--gray)" onclick="pagar(${i.linha}); event.stopPropagation();" title="Pagar">⟲</button>` :
-                `<button class="btn-action" style="color:var(--success)" onclick="reverter(${i.linha}); event.stopPropagation();" title="Reverter">✔</button>`}
-                <button class="btn-action" style="color:var(--danger)" onclick="excluirDesp(${i.linha}); event.stopPropagation();" title="Excluir">✕</button>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="checkbox" class="form-check-input mt-0" style="cursor:pointer; width: 1.2rem; height: 1.2rem;" 
+                    ${i.status === 'Pago' ? 'checked' : ''} 
+                    onclick="event.stopPropagation(); ${i.status === 'Pago' ? `reverter(${i.linha})` : `pagar(${i.linha})`}; return false;">
+                  <button class="btn-action" style="color:var(--danger)" onclick="excluirDesp(${i.linha}); event.stopPropagation();" title="Excluir">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
               </td>
             </tr>`;
           }
