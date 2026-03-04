@@ -1365,13 +1365,17 @@
       .topbar {
         display: flex !important;
         flex-direction: column !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         gap: 10px !important;
       }
 
       .topbar-brand {
         width: 100%;
-        text-align: center;
+        text-align: left;
+      }
+
+      #page-title {
+        font-size: 1.5rem !important;
       }
 
       .controls {
@@ -1619,7 +1623,7 @@
 
       <header class="topbar mb-4">
         <div class="topbar-brand">
-          <h2 class="fw-bold m-0" id="page-title" style="font-size: 1.15rem;">Dashboard Financeiro</h2>
+          <h2 class="fw-bold m-0" id="page-title">Dashboard Financeiro</h2>
         </div>
         <div class="topbar-controls">
           <div class="controls">
@@ -1778,9 +1782,6 @@
 
       <!-- ABA ANÁLISE (Compartilhada) -->
       <div id="view-geral" class="view">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h3 class="fw-bold m-0">Análise de Gastos</h3>
-        </div>
 
         <div id="container-formularios" style="display: none;" onclick="fecharFormFora(event)">
           <div class="row w-100">
