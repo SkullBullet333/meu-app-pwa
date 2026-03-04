@@ -1421,6 +1421,33 @@
         white-space: nowrap !important;
       }
 
+      /* Otimização de Tabela Mobile - Aba Geral */
+      .aba-geral th:nth-child(2),
+      .aba-geral td:nth-child(2),
+      /* Titular */
+      .aba-geral th:nth-child(4),
+      .aba-geral td:nth-child(4),
+      /* Categoria */
+      .aba-geral th:nth-child(5),
+      .aba-geral td:nth-child(5),
+      /* Vencimento */
+      .aba-geral th:nth-child(6),
+      .aba-geral td:nth-child(6),
+      /* Parcela */
+      .aba-geral th:nth-child(7),
+      .aba-geral td:nth-child(7)
+
+      /* Valor */
+        {
+        display: none !important;
+      }
+
+      /* Altura das tabelas no Mobile */
+      #extrato-dashboard-container,
+      #extrato-geral-container {
+        max-height: 80vh !important;
+      }
+
       /* Customização do Checkbox de Pagamento */
       .form-check-input:checked {
         background-color: #2ec4b6 !important;
@@ -1429,6 +1456,13 @@
     }
 
     @media (min-width: 769px) {
+
+      /* Altura das tabelas no PC */
+      #extrato-dashboard-container,
+      #extrato-geral-container {
+        max-height: 500px !important;
+      }
+
       .topbar {
         display: flex !important;
         flex-direction: row !important;
@@ -1667,7 +1701,7 @@
           <div class="col-lg-5">
             <div class="projecao-container" style="margin-top: 0;">
               <h5 class="fw-bold mb-3">📋 Extrato Detalhado</h5>
-              <div id="extrato-dashboard-container" style="overflow-y: auto; max-height: 800px;">
+              <div id="extrato-dashboard-container" style="overflow-y: auto;">
                 <table class="table table-hover">
                   <thead>
                     <tr>
@@ -2036,7 +2070,7 @@
               onclick="limparFiltrosManuais()">Limpar</button>
             <input type="hidden" id="f-mes"><input type="hidden" id="f-ano"><input type="hidden" id="f-titu">
           </div>
-          <div id="extrato-geral-container" style="overflow-x:auto; overflow-y:auto; max-height: 800px;">
+          <div id="extrato-geral-container" style="overflow-x:auto; overflow-y:auto;">
             <table id="tabela-principal">
               <thead id="cabecalhoTabela"></thead>
               <tbody id="corpoTabela"></tbody>
@@ -2687,6 +2721,14 @@
 
       const tbody = document.getElementById('corpoTabela');
       const thead = document.getElementById('cabecalhoTabela');
+      const tabela = document.getElementById('tabela-principal');
+
+      if (tabela) {
+        tabela.className = ""; // Limpa classes anteriores
+        if (abaAtiva === 'geral') tabela.classList.add('aba-geral');
+        else if (abaAtiva === 'cartoes') tabela.classList.add('aba-cartoes');
+        else if (abaAtiva === 'receitas') tabela.classList.add('aba-receitas');
+      }
 
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
