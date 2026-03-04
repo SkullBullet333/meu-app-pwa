@@ -2474,32 +2474,44 @@
       hoje.setHours(0, 0, 0, 0);
       const hojeIso = hoje.toISOString().split('T')[0];
 
-      // Pegar TODAS as despesas (sem filtrar por mês)
-      let todasDespesas = [...(dGeral || [])];
+      const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
 
-      // Ordenar por data (mais recentes primeiro)
-      todasDespesas.sort((a, b) => {
-        const dateA = a.vencimentoIso || '2000-01-01';
-        const dateB = b.vencimentoIso || '2000-01-01';
-        return dateB.localeCompare(dateA);
+      // Filtrar despesas: Mês selecionado OU Vencidas (Em aberto com data menor que hoje)
+      let despesasFiltradas = (dGeral || []).filter(i => {
+        const isMesSelecionado = i.competencia === compSelecionada;
+        const isVencidaPrestesManual = i.status === 'Em aberto' && i.vencimentoIso < hojeIso;
+        return isMesSelecionado || isVencidaPrestesManual;
       });
 
-      if (todasDespesas.length === 0) {
+      // Ordenar: Em aberto/Vencido/Hoje primeiro, Pago por último. Dentro disso, por data.
+      despesasFiltradas.sort((a, b) => {
+        const statusA = (a.status === 'Em aberto' && a.vencimentoIso < hojeIso) ? 'Vencida' : a.status;
+        const statusB = (b.status === 'Em aberto' && b.vencimentoIso < hojeIso) ? 'Vencida' : b.status;
+
+        const isPagoA = statusA === 'Pago';
+        const isPagoB = statusB === 'Pago';
+
+        if (isPagoA !== isPagoB) return isPagoA ? 1 : -1;
+
+        const dateA = a.vencimentoIso || '2000-01-01';
+        const dateB = b.vencimentoIso || '2000-01-01';
+        return dateA.localeCompare(dateB);
+      });
+
+      if (despesasFiltradas.length === 0) {
         extratoBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Nenhuma despesa encontrada</td></tr>';
         return;
       }
 
-      // Mostrar últimas 50 despesas
-      todasDespesas.slice(0, 50).forEach(i => {
+      despesasFiltradas.forEach(i => {
         let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
         let labelStatus = i.status || '';
-        let dateLabel = `${i.vencimento || ''}`;
+        const dia = i.vencimento ? i.vencimento.split('/')[0] : '';
 
         if (i.status === 'Em aberto') {
           if (i.vencimentoIso < hojeIso) {
             statusClass = 'status-vencida';
             labelStatus = 'Vencida';
-            dateLabel = `Venceu em ${i.vencimento}`;
           } else if (i.vencimentoIso === hojeIso) {
             statusClass = 'status-hoje';
             labelStatus = 'Hoje';
@@ -2514,8 +2526,7 @@
                   <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
                 </div>
                 <div>
-                  <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''}</div>
-                  <small class="text-muted">${dateLabel} • ${i.competencia || ''}</small>
+                  <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''} • Dia ${dia}</div>
                 </div>
               </div>
             </td>
@@ -2527,10 +2538,6 @@
             </td>
           </tr>`;
       });
-
-      if (todasDespesas.length > 50) {
-        extratoBody.innerHTML += `<tr><td colspan="3" class="text-center text-muted py-2">... e mais ${todasDespesas.length - 50} registros</td></tr>`;
-      }
     }
 
     // ==================== FUNÇÃO PRINCIPAL DE RENDERIZAÇÃO ====================
