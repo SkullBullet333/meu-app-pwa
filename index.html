@@ -1457,6 +1457,10 @@
       text-transform: uppercase;
       display: block;
     }
+
+    table tbody tr {
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -2619,7 +2623,7 @@
       if (abaAtiva === 'receitas') {
         thead.innerHTML = `<tr><th>Competência</th><th>Titular</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr>`;
         (dReceitas || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD)).forEach(i => {
-          tbody.innerHTML += `<tr>
+          tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
             <td><span class="badge-comp">${i.competencia || ''}</span></td>
             <td>${i.titular || ''}</td>
             <td>${i.descricao || ''}</td>
@@ -2648,7 +2652,7 @@
             }
           }
 
-          tbody.innerHTML += `<tr>
+          tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
             <td><span class="${statusClass}">${labelStatus}</span></td>
             <td>${i.titular || ''}</td>
             <td>${i.descricao || ''}</td>
@@ -2668,7 +2672,7 @@
       else if (abaAtiva === 'cartoes') {
         thead.innerHTML = `<tr><th>Cartão</th><th>Titular</th><th>Item</th><th>Categoria</th><th>Parc.</th><th>Valor</th><th>Ações</th></tr>`;
         (dCartoes || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroCardManual || i.cartao === filtroCardManual)).forEach(i => {
-          tbody.innerHTML += `<tr>
+          tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
             <td>${i.cartao || ''}</td>
             <td>${i.titular || ''}</td>
             <td>${i.descricao || ''}</td>
@@ -2998,6 +3002,52 @@
       if (contCartao) contCartao.style.display = (aba === 'cartoes') ? 'flex' : 'none';
 
       renderizarTabelaEAnalise();
+    }
+
+    function abrirEdicao(l) {
+      if (abaAtiva === 'receitas') {
+        const item = (dReceitas || []).find(x => x.linha === l);
+        if (!item) return;
+        document.getElementById('linha-edit-r').value = item.linha;
+        document.getElementById('desc-r').value = item.descricao || "";
+        document.getElementById('val-r').value = item.valor || "";
+        document.getElementById('titu-r').value = item.titular || "";
+        document.getElementById('rec-dia').value = item.vencimento ? item.vencimento.split('/')[0] : "5";
+        document.getElementById('parc-r').value = "1";
+        document.getElementById('parc-r').disabled = true;
+        mostrarForm('receita');
+      }
+      else if (abaAtiva === 'geral') {
+        const item = (dGeral || []).find(x => x.linha === l);
+        if (!item) return;
+        document.getElementById('linha-edit').value = item.linha;
+        document.getElementById('desc').value = item.descricao || "";
+        document.getElementById('val').value = item.valor || "";
+        document.getElementById('cat-geral').value = item.categoria || "";
+        document.getElementById('titu').value = item.titular || "";
+        document.getElementById('venc-dia').value = item.vencimento ? item.vencimento.split('/')[0] : "15";
+        document.getElementById('parc').value = "1";
+        document.getElementById('parc').disabled = true;
+        mostrarForm('geral');
+      }
+      else if (abaAtiva === 'cartoes') {
+        const item = (dCartoes || []).find(x => x.linha === l);
+        if (!item) return;
+        document.getElementById('linha-edit-c').value = item.linha;
+        document.getElementById('desc-c').value = item.descricao || "";
+        document.getElementById('val-c').value = item.valor || "";
+        document.getElementById('cat-c').value = item.categoria || "";
+        document.getElementById('parc-c').value = "1";
+        document.getElementById('parc-c').disabled = true;
+
+        // Tentar selecionar o cartão correto no select
+        const sel = document.getElementById('cartao-c');
+        const options = Array.from(sel.options);
+        const opt = options.find(o => o.value.startsWith(item.cartao + '|'));
+        if (opt) sel.value = opt.value;
+
+        mostrarForm('cartao');
+      }
     }
 
     function filtrarCartaoRapido(nome) {
@@ -3557,6 +3607,7 @@
     window.excluirRec = excluirRec;
     window.excluirCartao = excluirCartao;
     window.mudarAba = mudarAba;
+    window.abrirEdicao = abrirEdicao;
     window.filtrarCartaoRapido = filtrarCartaoRapido;
     window.filtrarTitularRapido = filtrarTitularRapido;
     window.limparFiltrosManuais = limparFiltrosManuais;
