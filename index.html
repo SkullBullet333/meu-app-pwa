@@ -1317,13 +1317,13 @@
       }
 
       .mobile-nav {
-        display: flex;
+        display: none !important;
       }
 
       .content {
         margin-left: 0 !important;
         width: 100% !important;
-        padding: 20px 20px 100px 20px !important;
+        padding: 20px 20px 40px 20px !important;
       }
 
       .menu li {
@@ -1344,6 +1344,43 @@
 
       .chart-container {
         height: 220px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 15px !important;
+      }
+
+      .topbar-mobile-row-1 {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+
+      .topbar-mobile-row-2 {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .kpi-grid-mobile {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+      }
+
+      .kpi-card {
+        padding: 12px 10px !important;
+      }
+
+      .kpi-card h3 {
+        font-size: 1.1rem !important;
+      }
+
+      .kpi-card small {
+        font-size: 0.65rem !important;
       }
     }
 
@@ -1512,10 +1549,19 @@
     <main class="content">
 
       <header class="topbar d-flex justify-content-between align-items-center mb-4">
-        <div>
+        <div class="topbar-mobile-row-1">
           <h2 class="fw-bold m-0" id="page-title">Dashboard Financeiro</h2>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-primary" id="theme-toggle" onclick="toggleTheme()"
+              title="Alternar Tema">
+              <i class="fa-solid fa-moon"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-primary" onclick="carregar()">
+              <i class="fa-solid fa-refresh"></i>
+            </button>
+          </div>
         </div>
-        <div class="d-flex align-items-center gap-3">
+        <div class="topbar-mobile-row-2">
           <div class="controls d-flex align-items-center">
             <button onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
             <div class="date-display mx-3" title="Clique para selecionar o período" onclick="abrirModalPeriodo()">
@@ -1523,38 +1569,31 @@
             </div>
             <button onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
-          <button class="btn btn-sm btn-outline-primary" id="theme-toggle" onclick="toggleTheme()"
-            title="Alternar Tema">
-            <i class="fa-solid fa-moon"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-primary" onclick="carregar()">
-            <i class="fa-solid fa-refresh"></i>
-          </button>
         </div>
       </header>
 
       <!-- ABA DASHBOARD -->
       <div id="view-dashboard" class="view active">
-        <div class="row g-4 mb-4">
-          <div class="col-md-3 col-sm-6">
+        <div class="row g-3 mb-4 kpi-grid-mobile">
+          <div class="col-md-3 col-6">
             <div class="kpi-card kpi-card-blue">
               <small>💰 RECEITAS</small>
               <h3 id="totalRec" class="centered-value" style="color: var(--primary)">R$ 0,00</h3>
             </div>
           </div>
-          <div class="col-md-3 col-sm-6">
+          <div class="col-md-3 col-6">
             <div class="kpi-card kpi-card-red">
               <small>📉 DESPESAS</small>
               <h3 id="totalDespGeral" class="centered-value" style="color: var(--danger)">R$ 0,00</h3>
             </div>
           </div>
-          <div class="col-md-3 col-sm-6">
+          <div class="col-md-3 col-6">
             <div class="kpi-card kpi-card-green">
               <small>📈 SOBRA</small>
               <h3 id="totalSobras" class="centered-value" style="color: #2ecc71">R$ 0,00</h3>
             </div>
           </div>
-          <div class="col-md-3 col-sm-6">
+          <div class="col-md-3 col-6">
             <div class="kpi-card kpi-card-purple">
               <small>💳 FATURAS</small>
               <h3 id="totalFaturas" class="centered-value" style="color: var(--faturas)">R$ 0,00</h3>
