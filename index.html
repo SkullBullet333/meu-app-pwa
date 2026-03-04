@@ -2021,31 +2021,30 @@
           </div>
         </div>
       </div>
-  </div>
-  </main>
+    </main>
 
-  <nav class="mobile-nav">
-    <div class="mobile-nav-item active" onclick="nav('dashboard')">
-      <i class="fa-solid fa-house"></i>
-      <span>Home</span>
-    </div>
-    <div class="mobile-nav-item" onclick="nav('geral')">
-      <i class="fa-solid fa-clipboard-list"></i>
-      <span>Fixas</span>
-    </div>
-    <div class="mobile-nav-item" onclick="nav('cartoes')">
-      <i class="fa-solid fa-credit-card"></i>
-      <span>Cartões</span>
-    </div>
-    <div class="mobile-nav-item" onclick="nav('receitas')">
-      <i class="fa-solid fa-money-bill-wave"></i>
-      <span>Receitas</span>
-    </div>
-    <div class="mobile-nav-item" onclick="nav('config')">
-      <i class="fa-solid fa-gear"></i>
-      <span>Config</span>
-    </div>
-  </nav>
+    <nav class="mobile-nav">
+      <div class="mobile-nav-item active" onclick="nav('dashboard')">
+        <i class="fa-solid fa-house"></i>
+        <span>Home</span>
+      </div>
+      <div class="mobile-nav-item" onclick="nav('geral')">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Fixas</span>
+      </div>
+      <div class="mobile-nav-item" onclick="nav('cartoes')">
+        <i class="fa-solid fa-credit-card"></i>
+        <span>Cartões</span>
+      </div>
+      <div class="mobile-nav-item" onclick="nav('receitas')">
+        <i class="fa-solid fa-money-bill-wave"></i>
+        <span>Receitas</span>
+      </div>
+      <div class="mobile-nav-item" onclick="nav('config')">
+        <i class="fa-solid fa-gear"></i>
+        <span>Config</span>
+      </div>
+    </nav>
   </div>
 
   <!-- Modal de Confirmação -->
@@ -2112,14 +2111,20 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    // Configuração inicial
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
-        .then(() => console.log("Service Worker registrado"));
+        .then(() => console.log("Service Worker registrado"))
+        .catch(err => console.error("Erro ao registrar Service Worker:", err));
     }
-    google.charts.load('current', { 'packages': ['corechart'] });
 
-    // Variáveis globais
-    let dGeral = [], dCartoes = [], dReceitas = [];
+    // Carregar Google Charts
+    google.charts.load('current', { packages: ['corechart'] });
+
+    // ==================== VARIÁVEIS GLOBAIS ====================
+    let dGeral = [];
+    let dCartoes = [];
+    let dReceitas = [];
     let abaAtiva = localStorage.getItem('abaAtiva') || 'dashboard';
     let currentMonth = parseInt(localStorage.getItem('currentMonth')) || new Date().getMonth() + 1;
     let currentYear = parseInt(localStorage.getItem('currentYear')) || new Date().getFullYear();
@@ -2128,36 +2133,59 @@
     let filtroTitularManual = "";
     let confirmDeleteCallback = null;
     let editingRow = null;
+    let anoModalAtivo = currentYear;
 
-    // URL da API do Google Apps Script
+    // URL da API do Google Apps Script (ATUALIZADA)
     const API_URL = "https://script.google.com/macros/s/AKfycby9IwfWuP5U95sn2m5MHOuc8y2slnFoj36v_MVbfr8RYwPyUNELoNfpfc9UbcE26_li/exec";
-    const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
-    
-    // Função com proxy
-    async function callAppsScript(acao, dados = {}) {
-      try {
-        // Usar proxy para contornar CORS
-        const response = await fetch(PROXY_URL + API_URL, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify({ acao, dados })
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
-        return data;
-      } catch (error) {
-        console.error('Erro na chamada API:', error);
-        throw error;
-      }
-    }
+
+    // ==================== FUNÇÃO PRINCIPAL DA API (JSONP) ====================
+    function callAppsScript(acao, dados = {}) {
+      return new Promise((resolve, reject) => {
+        try {
+          const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          const script = document.createElement('script');
+          
+          const params = new URLSearchParams({
+            acao: acao,
+            dados: JSON.stringify(dados),
+            callback: callbackName
+          });
+          
+          window[callbackName] = function(response) {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            clearTimeout(timeout);
+            
+            if (response && response.error) {
+              reject(new Error(response.error));
+            } else {
+              resolve(response || {});
+            }
+          };
+          
+          const timeout = setTimeout(() => {
+            delete window[callbackName];
+            if (script.parentNode) document.body.removeChild(script);
+            reject(new Error('Timeout ao chamar a API'));
+          }, 30000);
+          
+          script.src = API_URL + '?' + params.toString();
+          script.onerror = function() {
+            clearTimeout(timeout);
+            delete window[callbackName];
+            if (script.parentNode) document.body.removeChild(script);
+            reject(new Error('Erro ao carregar o script da API'));
+          };
+          
+          document.body.appendChild(script);
+          
+        } catch (error) {
+          reject(error);
+        }
+      });
     }
 
-    // Funções de utilidade
+    // ==================== FUNÇÕES DE UTILIDADE ====================
     function showLoading() {
       document.getElementById('loading-overlay').style.display = 'flex';
     }
@@ -2221,7 +2249,7 @@
       modal.show();
     }
 
-    // Função de navegação
+    // ==================== FUNÇÃO DE NAVEGAÇÃO ====================
     function nav(view) {
       let targetView = view;
       if (['geral', 'cartoes', 'receitas'].includes(view)) {
@@ -2253,7 +2281,8 @@
         'radar': '🔍 Radar Financeiro',
         'config': '⚙️ Configurações do Sistema'
       };
-      document.getElementById('page-title').innerText = titles[view] || '';
+      const titleEl = document.getElementById('page-title');
+      if (titleEl) titleEl.innerText = titles[view] || '';
 
       if (view === 'dashboard') {
         renderizarTabelaEAnalise();
@@ -2273,6 +2302,7 @@
       }
     }
 
+    // ==================== FUNÇÕES DO FORMULÁRIO ====================
     function mostrarFormContextual() {
       if (abaAtiva === 'geral') mostrarForm('geral');
       else if (abaAtiva === 'cartoes') mostrarForm('cartao');
@@ -2303,6 +2333,28 @@
       }
     }
 
+    function limparCampos() {
+      document.getElementById('linha-edit').value = "";
+      document.getElementById('linha-edit-r').value = "";
+      document.getElementById('linha-edit-c').value = "";
+      document.getElementById('desc').value = "";
+      document.getElementById('val').value = "";
+      document.getElementById('cat-geral').value = "";
+      document.getElementById('parc').value = "1";
+      document.getElementById('desc-r').value = "";
+      document.getElementById('val-r').value = "";
+      document.getElementById('parc-r').value = "1";
+      document.getElementById('desc-c').value = "";
+      document.getElementById('cat-c').value = "";
+      document.getElementById('val-c').value = "";
+      document.getElementById('parc-c').value = "1";
+
+      document.getElementById('parc').disabled = false;
+      document.getElementById('parc-r').disabled = false;
+      document.getElementById('parc-c').disabled = false;
+    }
+
+    // ==================== FUNÇÕES DE DATA ====================
     function changeMonth(d) {
       currentMonth += d;
       if (currentMonth > 12) { currentMonth = 1; currentYear++; }
@@ -2318,6 +2370,14 @@
       }
     }
 
+    function updateDateDisplay() {
+      const n = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+      const lblMes = document.getElementById('lblMes');
+      const lblAno = document.getElementById('lblAno');
+      if (lblMes) lblMes.innerText = n[currentMonth - 1];
+      if (lblAno) lblAno.innerText = currentYear;
+    }
+
     function abrirModalPeriodo() {
       anoModalAtivo = currentYear;
       document.getElementById('ano-modal').innerText = anoModalAtivo;
@@ -2330,7 +2390,6 @@
       modal.show();
     }
 
-    let anoModalAtivo = 2024;
     function mudarAnoModal(d) {
       anoModalAtivo += d;
       document.getElementById('ano-modal').innerText = anoModalAtivo;
@@ -2355,27 +2414,7 @@
       bootstrap.Modal.getInstance(document.getElementById('periodoModal')).hide();
     }
 
-    function toggleSettingsList(id, buttonId) {
-      const content = document.getElementById(id);
-      const btn = document.getElementById(buttonId);
-      if (content.classList.contains('hidden-content')) {
-        content.classList.remove('hidden-content');
-        btn.classList.remove('fa-eye');
-        btn.classList.add('fa-eye-slash');
-      } else {
-        content.classList.add('hidden-content');
-        btn.classList.remove('fa-eye-slash');
-        btn.classList.add('fa-eye');
-      }
-    }
-
-    function updateDateDisplay() {
-      const n = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
-      document.getElementById('lblMes').innerText = n[currentMonth - 1];
-      document.getElementById('lblAno').innerText = currentYear;
-    }
-
-    // Função principal de carregamento
+    // ==================== FUNÇÃO PRINCIPAL DE CARREGAMENTO ====================
     async function carregar() {
       showLoading();
       try {
@@ -2406,6 +2445,7 @@
       }
     }
 
+    // ==================== FUNÇÕES DE RENDERIZAÇÃO ====================
     function renderizarTabelaEAnalise() {
       const fD = document.getElementById('f-desc') ? document.getElementById('f-desc').value.toLowerCase() : '';
       const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
@@ -2426,7 +2466,7 @@
       let pTit = {};
       let tTitu = {};
 
-      configApp.titulares.forEach(t => {
+      (configApp.titulares || []).forEach(t => {
         pTit[t] = 0;
         tTitu[t] = 0;
       });
@@ -2439,7 +2479,7 @@
         "Sicoob Clássico": 0
       };
 
-      dGeral.forEach(i => {
+      (dGeral || []).forEach(i => {
         if (i.competencia === compSelecionada) {
           const v = Number(i.valor || 0);
           i.status === "Pago" ? tPag += v : tAbe += v;
@@ -2448,7 +2488,7 @@
         }
       });
 
-      dCartoes.forEach(i => {
+      (dCartoes || []).forEach(i => {
         if (i.competencia === compSelecionada) {
           const v = Number(i.valor || 0);
           if (tCrd.hasOwnProperty(i.cartao)) {
@@ -2478,10 +2518,11 @@
       };
 
       Object.keys(cardMap).forEach(nome => {
-        const cardConf = configApp.cartoes.find(c => c.nome === nome);
+        const cardConf = (configApp.cartoes || []).find(c => c.nome === nome);
         const el = document.getElementById(cardMap[nome]);
         if (el) el.innerText = cardConf ? cardConf.titular : '';
       });
+      
       setV('total-titu-noadia', tTitu["Noádia"]);
       setV('total-titu-pablo', tTitu["Pablo"]);
       setV('total-titu-casa', tTitu["Casa"]);
@@ -2504,14 +2545,14 @@
 
       if (abaAtiva === 'receitas') {
         thead.innerHTML = `<tr><th>Competência</th><th>Titular</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr>`;
-        sortD(dReceitas).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD)).forEach(i => {
+        sortD(dReceitas || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD)).forEach(i => {
           if (editingRow && editingRow.linha === i.linha && editingRow.tipo === 'receita') {
             tbody.innerHTML += `
               <tr class="editing-row" data-linha="${i.linha}">
                 <td><span class="badge-comp">${i.competencia || ''}</span></td>
                 <td>
                   <select class="inline-edit-select" id="edit-titu-${i.linha}">
-                    ${configApp.titulares.map(t =>
+                    ${(configApp.titulares || []).map(t =>
               `<option value="${t}" ${t === i.titular ? 'selected' : ''}>${t}</option>`
             ).join('')}
                   </select>
@@ -2546,7 +2587,7 @@
       }
       else if (abaAtiva === 'geral') {
         thead.innerHTML = `<tr><th>Status</th><th>Titular</th><th>Descrição</th><th>Categoria</th><th>Venc.</th><th>Parc.</th><th>Valor</th><th>Ações</th></tr>`;
-        sortD(dGeral).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
+        sortD(dGeral || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
           const isConsolidado = ["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(i.descricao);
 
           if (editingRow && editingRow.linha === i.linha && editingRow.tipo === 'geral' && !isConsolidado) {
@@ -2561,7 +2602,7 @@
                 <td><span class="${statusClass}">${i.status || ''}</span></td>
                 <td>
                   <select class="inline-edit-select" id="edit-titu-${i.linha}">
-                    ${configApp.titulares.map(t =>
+                    ${(configApp.titulares || []).map(t =>
               `<option value="${t}" ${t === i.titular ? 'selected' : ''}>${t}</option>`
             ).join('')}
                   </select>
@@ -2623,7 +2664,7 @@
       }
       else if (abaAtiva === 'cartoes') {
         thead.innerHTML = `<tr><th>Cartão</th><th>Titular</th><th>Item</th><th>Categoria</th><th>Parc.</th><th>Valor</th><th>Ações</th></tr>`;
-        sortD(dCartoes).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroCardManual || i.cartao === filtroCardManual)).forEach(i => {
+        sortD(dCartoes || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroCardManual || i.cartao === filtroCardManual)).forEach(i => {
           if (editingRow && editingRow.linha === i.linha && editingRow.tipo === 'cartao') {
             tbody.innerHTML += `
               <tr class="editing-row" data-linha="${i.linha}">
@@ -2682,203 +2723,6 @@
       gerarProjecao();
     }
 
-    // Funções de edição inline
-    function iniciarEdicaoCartao(linha) {
-      const item = dCartoes.find(x => x.linha === linha);
-      if (!item) return;
-
-      editingRow = { linha: linha, tipo: 'cartao', item: item };
-      renderizarTabelaEAnalise();
-
-      setTimeout(() => {
-        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
-        if (primeiroCampo) primeiroCampo.focus();
-      }, 100);
-    }
-
-    function iniciarEdicaoGeral(linha) {
-      const item = dGeral.find(x => x.linha === linha);
-      if (!item) return;
-
-      if (["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(item.descricao)) {
-        showToast('Itens consolidados não podem ser editados diretamente', 'warning');
-        return;
-      }
-
-      editingRow = { linha: linha, tipo: 'geral', item: item };
-      renderizarTabelaEAnalise();
-
-      setTimeout(() => {
-        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
-        if (primeiroCampo) primeiroCampo.focus();
-      }, 100);
-    }
-
-    function iniciarEdicaoReceita(linha) {
-      const item = dReceitas.find(x => x.linha === linha);
-      if (!item) return;
-
-      editingRow = { linha: linha, tipo: 'receita', item: item };
-      renderizarTabelaEAnalise();
-
-      setTimeout(() => {
-        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
-        if (primeiroCampo) primeiroCampo.focus();
-      }, 100);
-    }
-
-    function cancelarEdicao() {
-      editingRow = null;
-      renderizarTabelaEAnalise();
-    }
-
-    async function salvarEdicaoInlineCartao(linha) {
-      const cartaoSelect = document.getElementById(`edit-cartao-${linha}`);
-      const descInput = document.getElementById(`edit-desc-${linha}`);
-      const catInput = document.getElementById(`edit-cat-${linha}`);
-      const valInput = document.getElementById(`edit-val-${linha}`);
-
-      if (!cartaoSelect || !descInput || !catInput || !valInput) return;
-
-      const cartaoInfo = cartaoSelect.value.split('|');
-      const nomeCartao = cartaoInfo[0];
-      const titularCartao = cartaoInfo[1];
-      const diaVencimento = cartaoInfo[2] || '10';
-      const descricao = descInput.value.trim();
-      const categoria = catInput.value.trim();
-      const valor = valInput.value;
-
-      if (!descricao || !valor) {
-        showToast('Preencha todos os campos!', 'warning');
-        return;
-      }
-
-      const mesAtual = ("0" + currentMonth).slice(-2);
-      const anoAtual = currentYear;
-      const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
-
-      const dados = {
-        linha: linha,
-        cartao: nomeCartao,
-        titular: titularCartao,
-        descricao: descricao,
-        categoria: categoria,
-        valor: valor,
-        vencimento: vencimento
-      };
-
-      showLoading();
-      try {
-        await callAppsScript('editarCartao', dados);
-        showToast('Cartão editado com sucesso!', 'success');
-        editingRow = null;
-        await carregar();
-      } catch (error) {
-        showToast('Erro ao editar: ' + error.message, 'danger');
-      } finally {
-        hideLoading();
-      }
-    }
-
-    async function salvarEdicaoInlineGeral(linha) {
-      const descInput = document.getElementById(`edit-desc-${linha}`);
-      const valInput = document.getElementById(`edit-val-${linha}`);
-      const tituSelect = document.getElementById(`edit-titu-${linha}`);
-      const catSelect = document.getElementById(`edit-cat-${linha}`);
-      const vencInput = document.getElementById(`edit-venc-${linha}`);
-
-      if (!descInput || !valInput || !tituSelect || !catSelect || !vencInput) return;
-
-      const descricao = descInput.value.trim();
-      const valor = valInput.value;
-      const titular = tituSelect.value;
-      const categoria = catSelect.value;
-      const vencimento = vencInput.value;
-
-      if (!descricao || !valor || !titular || !vencimento) {
-        showToast('Preencha todos os campos!', 'warning');
-        return;
-      }
-
-      const dados = {
-        linha: linha,
-        descricao: descricao,
-        categoria: categoria,
-        valor: valor,
-        titular: titular,
-        vencimento: vencimento
-      };
-
-      showLoading();
-      try {
-        await callAppsScript('editarDespesa', dados);
-        showToast('Item editado com sucesso!', 'success');
-        editingRow = null;
-        await carregar();
-      } catch (error) {
-        showToast('Erro ao editar: ' + error.message, 'danger');
-      } finally {
-        hideLoading();
-      }
-    }
-
-    async function salvarEdicaoInlineReceita(linha) {
-      const descInput = document.getElementById(`edit-desc-${linha}`);
-      const valInput = document.getElementById(`edit-val-${linha}`);
-      const tituSelect = document.getElementById(`edit-titu-${linha}`);
-
-      if (!descInput || !valInput || !tituSelect) return;
-
-      const descricao = descInput.value.trim();
-      const valor = valInput.value;
-      const titular = tituSelect.value;
-
-      if (!descricao || !valor || !titular) {
-        showToast('Preencha todos os campos!', 'warning');
-        return;
-      }
-
-      const recebimento = editingRow.item.recebimentoIso;
-
-      const dados = {
-        linha: linha,
-        descricao: descricao,
-        valor: valor,
-        titular: titular,
-        recebimento: recebimento
-      };
-
-      showLoading();
-      try {
-        await callAppsScript('editarReceita', dados);
-        showToast('Receita editada com sucesso!', 'success');
-        editingRow = null;
-        await carregar();
-      } catch (error) {
-        showToast('Erro ao editar: ' + error.message, 'danger');
-      } finally {
-        hideLoading();
-      }
-    }
-
-    document.addEventListener('keydown', function (e) {
-      if (!editingRow) return;
-
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (editingRow.tipo === 'cartao') {
-          salvarEdicaoInlineCartao(editingRow.linha);
-        } else if (editingRow.tipo === 'geral') {
-          salvarEdicaoInlineGeral(editingRow.linha);
-        } else if (editingRow.tipo === 'receita') {
-          salvarEdicaoInlineReceita(editingRow.linha);
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cancelarEdicao();
-      }
-    });
-
     function atualizarDashboard() {
       const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
       const hoje = new Date();
@@ -2887,13 +2731,13 @@
 
       let tRec = 0, tPag = 0, tAbe = 0, tFat = 0;
 
-      dReceitas.forEach(i => {
+      (dReceitas || []).forEach(i => {
         if (i.competencia === compSelecionada) {
           tRec += Number(i.valor || 0);
         }
       });
 
-      dGeral.forEach(i => {
+      (dGeral || []).forEach(i => {
         if (i.competencia === compSelecionada) {
           const v = Number(i.valor || 0);
           if (["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(i.descricao)) {
@@ -2909,225 +2753,6 @@
       document.getElementById('totalDespGeral').innerText = formatarMoeda(despTotal);
       document.getElementById('totalFaturas').innerText = formatarMoeda(tFat);
       document.getElementById('totalSobras').innerText = formatarMoeda(tRec - despTotal);
-    }
-
-    function sugerirCategoria(desc) {
-      const d = (desc || '').toLowerCase();
-      const catInput = document.getElementById('cat-c');
-      if (!configApp.categorias) return;
-
-      for (const cat of configApp.categorias) {
-        const keywords = (cat.keywords || '').split(',').map(k => k.trim().toLowerCase());
-        if (keywords.some(k => k && d.includes(k))) {
-          catInput.value = cat.label;
-          return;
-        }
-      }
-      catInput.value = '';
-    }
-
-    window.sugerirCategoria = sugerirCategoria;
-
-    function getIconByDescription(desc) {
-      const d = (desc || '').toLowerCase();
-      if (d.includes('mercado') || d.includes('supermercado') || d.includes('feira')) return 'fa-cart-shopping';
-      if (d.includes('combustivel') || d.includes('gasolina') || d.includes('posto') || d.includes('carro')) return 'fa-gas-pump';
-      if (d.includes('energia') || d.includes('luz') || d.includes('celpa') || d.includes('equatorial')) return 'fa-bolt';
-      if (d.includes('agua') || d.includes('cosanpa')) return 'fa-droplet';
-      if (d.includes('internet') || d.includes('wifi') || d.includes('netflix') || d.includes('spotify') || d.includes('assina')) return 'fa-globe';
-      if (d.includes('aluguel') || d.includes('casa') || d.includes('condominio')) return 'fa-house';
-      if (d.includes('saude') || d.includes('farmacia') || d.includes('medico') || d.includes('unimed')) return 'fa-heart-pulse';
-      if (d.includes('lanche') || d.includes('pizza') || d.includes('ifes') || d.includes('restaurante') || d.includes('ifood')) return 'fa-utensils';
-      if (d.includes('cartao') || d.includes('fatura') || d.includes('nubank') || d.includes('inter') || d.includes('mercado pago')) return 'fa-credit-card';
-      if (d.includes('transferencia') || d.includes('pix') || d.includes('pagamento')) return 'fa-money-bill-transfer';
-      return 'fa-dollar-sign';
-    }
-
-    const extratoBody = document.getElementById('corpoExtratoDashboard');
-    if (extratoBody) {
-      extratoBody.innerHTML = "";
-      const dadosMes = dGeral.filter(i =>
-        (i.competencia === compSelecionada) ||
-        (i.status === 'Em aberto' && i.vencimentoIso < hojeIso)
-      );
-
-      if (dadosMes.length === 0) {
-        extratoBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sem despesas este mês</td></tr>';
-      } else {
-        dadosMes.sort((a, b) => {
-          if (a.status !== b.status) {
-            return a.status === 'Em aberto' ? -1 : 1;
-          }
-          const dateA = a.vencimentoIso || '2000-01-01';
-          const dateB = b.vencimentoIso || '2000-01-01';
-          return dateA.localeCompare(dateB);
-        }).forEach(i => {
-          const dia = (i.vencimento || '00/00/0000').split('/')[0];
-          let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
-          let labelStatus = i.status || '';
-          let dateLabel = `Dia ${dia}`;
-
-          if (i.status === 'Em aberto') {
-            if (i.vencimentoIso < hojeIso) {
-              statusClass = 'status-vencida';
-              labelStatus = 'Vencida';
-              dateLabel = `Venceu em ${i.vencimento}`;
-            } else if (i.vencimentoIso === hojeIso) {
-              statusClass = 'status-hoje';
-              labelStatus = 'Hoje';
-            }
-          }
-
-          extratoBody.innerHTML += `
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center gap-3">
-                  <div class="icon-circle">
-                    <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
-                  </div>
-                  <div>
-                    <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''}</div>
-                    <small class="text-muted">${dateLabel}</small>
-                  </div>
-                </div>
-              </td>
-              <td class="align-middle text-end" style="white-space: nowrap;">
-                <div class="fw-bold" style="font-size:0.9rem">${formatarMoeda(i.valor)}</div>
-                <div class="mt-1">
-                  <span class="${statusClass}" style="font-size:0.65rem; padding: 2px 6px;">${labelStatus}</span>
-                </div>
-              </td>
-            </tr>`;
-        });
-      }
-    }
-
-    function renderizarRadarFinanceiro() {
-      if (!dGeral) return;
-
-      const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
-
-      let tRec = 0;
-      dReceitas.forEach(i => { if (i.competencia === compSelecionada) tRec += Number(i.valor || 0); });
-
-      let despEssencial = 0;
-      let despEstiloVida = 0;
-      let totalDesp = 0;
-
-      const categoriasEssenciais = ['Mercado', 'Transporte', 'Saúde', 'Moradia', 'Educação', 'Energia', 'Água', 'Internet'];
-
-      dGeral.forEach(i => {
-        if (i.competencia === compSelecionada) {
-          const v = Number(i.valor || 0);
-          totalDesp += v;
-          if (categoriasEssenciais.some(cat => (i.categoria || '').includes(cat))) {
-            despEssencial += v;
-          } else {
-            despEstiloVida += v;
-          }
-        }
-      });
-
-      let score = 0;
-      if (tRec > 0) {
-        const proporcao = (totalDesp / tRec);
-        score = Math.max(0, Math.min(100, (1 - proporcao) * 100));
-      }
-
-      const scoreEl = document.getElementById('radar-health-score');
-      const barEl = document.getElementById('radar-health-bar');
-      if (scoreEl) scoreEl.innerText = Math.round(score) + "%";
-      if (barEl) {
-        barEl.style.width = score + "%";
-        barEl.className = 'progress-bar ' + (score > 70 ? 'bg-success' : score > 40 ? 'bg-primary' : 'bg-danger');
-      }
-
-      const savingsPotential = despEstiloVida * 0.2;
-      document.getElementById('radar-savings-potential').innerText = formatarMoeda(savingsPotential);
-
-      let limitUsage = 0;
-      if (tRec > 0) {
-        limitUsage = (totalDesp / (tRec * 0.8)) * 100;
-      }
-      document.getElementById('radar-spending-limit').innerText = Math.round(limitUsage) + "%";
-
-      const insightsList = document.getElementById('radar-insights-list');
-      if (insightsList) {
-        insightsList.innerHTML = "";
-        const insights = [];
-
-        if (score < 50) {
-          insights.push({ icon: 'fa-triangle-exclamation', color: 'text-danger', title: 'Atenção ao Saldo', text: 'Suas despesas estão muito próximas ou acima da sua receita. Considere revisar gastos imediatos.' });
-        } else if (score > 80) {
-          insights.push({ icon: 'fa-star', color: 'text-success', title: 'Excelente Gestão', text: 'Você está mantendo uma ótima margem de segurança este mês.' });
-        }
-
-        if (despEstiloVida > despEssencial) {
-          insights.push({ icon: 'fa-couch', color: 'text-warning', title: 'Gastos de Estilo de Vida', text: 'Gastos com lazer e extras superaram os essenciais. Há oportunidade de economia.' });
-        }
-
-        if (totalDesp > tRec * 0.9) {
-          insights.push({ icon: 'fa-piggy-bank', color: 'text-info', title: 'Reserva de Emergência', text: 'Separe ao menos 10% da sua receita antes do mês começar.' });
-        }
-
-        if (insights.length === 0) {
-          insights.push({ icon: 'fa-check', color: 'text-primary', title: 'Tudo em Ordem', text: 'Continue acompanhando seus registros.' });
-        }
-
-        insights.forEach(ins => {
-          insightsList.innerHTML += `
-            <div class="d-flex align-items-start gap-3 p-3 rounded bg-light border-start border-4 ${ins.color.replace('text', 'border')}">
-              <i class="fa-solid ${ins.icon} ${ins.color} mt-1" style="font-size: 1.2rem;"></i>
-              <div>
-                <div class="fw-bold">${ins.title}</div>
-                <div class="small">${ins.text}</div>
-              </div>
-            </div>
-          `;
-        });
-      }
-
-      drawRadarChartDistribution(despEssencial, despEstiloVida);
-
-      const trendBar = document.getElementById('radar-trend-bar');
-      const trendMsg = document.getElementById('radar-trend-message');
-      if (trendBar && trendMsg) {
-        const trend = Math.floor(Math.random() * 40) + 60;
-        trendBar.style.width = trend + "%";
-        trendBar.className = 'progress-bar ' + (trend < 90 ? 'bg-success' : 'bg-warning');
-        trendMsg.innerText = `Você gastou ${trend}% do mês anterior até hoje.`;
-      }
-    }
-
-    function drawRadarChartDistribution(essencial, estilo) {
-      const chartDiv = document.getElementById('chart_radar_distribution');
-      if (!chartDiv) return;
-
-      try {
-        const isDark = document.body.classList.contains('dark-mode');
-        const textColor = isDark ? '#F9FAFB' : '#64748B';
-
-        const data = google.visualization.arrayToDataTable([
-          ['Categoria', 'Valor'],
-          ['Essencial', essencial],
-          ['Lifestyle', estilo]
-        ]);
-
-        const options = {
-          pieHole: 0.6,
-          backgroundColor: 'transparent',
-          colors: ['#4361ee', '#ff9f1c'],
-          legend: { position: 'bottom', textStyle: { color: textColor, fontSize: 12 } },
-          chartArea: { width: '90%', height: '80%' },
-          pieSliceText: 'none',
-          tooltip: { textStyle: { fontSize: 13 } }
-        };
-
-        const chart = new google.visualization.PieChart(chartDiv);
-        chart.draw(data, options);
-      } catch (e) {
-        console.error("Erro ao desenhar gráfico Radar:", e);
-      }
     }
 
     function drawTitularChart(dp) {
@@ -3234,8 +2859,8 @@
 
       head.innerHTML = `<tr><th>Tipo</th>${meses.map(m => `<th>${m}</th>`).join('')}</tr>`;
 
-      let recs = meses.map(m => dReceitas.filter(i => i.competencia === m).reduce((a, b) => a + Number(b.valor || 0), 0));
-      let desps = meses.map(m => dGeral.filter(i => i.competencia === m).reduce((a, b) => a + Number(b.valor || 0), 0));
+      let recs = meses.map(m => (dReceitas || []).filter(i => i.competencia === m).reduce((a, b) => a + Number(b.valor || 0), 0));
+      let desps = meses.map(m => (dGeral || []).filter(i => i.competencia === m).reduce((a, b) => a + Number(b.valor || 0), 0));
 
       body.innerHTML = `
         <tr><td>Receitas</td>${recs.map(v => `<td>${formatarMoeda(v)}</td>`).join('')}</tr>
@@ -3248,12 +2873,227 @@
         </tr>`;
     }
 
-    function limparFiltrosManuais() {
-      filtroCardManual = "";
-      filtroTitularManual = "";
-      renderizarTabelaEAnalise();
+    function renderizarRadarFinanceiro() {
+      if (!dGeral) return;
+
+      const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
+
+      let tRec = 0;
+      (dReceitas || []).forEach(i => { if (i.competencia === compSelecionada) tRec += Number(i.valor || 0); });
+
+      let despEssencial = 0;
+      let despEstiloVida = 0;
+      let totalDesp = 0;
+
+      const categoriasEssenciais = ['Mercado', 'Transporte', 'Saúde', 'Moradia', 'Educação', 'Energia', 'Água', 'Internet'];
+
+      (dGeral || []).forEach(i => {
+        if (i.competencia === compSelecionada) {
+          const v = Number(i.valor || 0);
+          totalDesp += v;
+          if (categoriasEssenciais.some(cat => (i.categoria || '').includes(cat))) {
+            despEssencial += v;
+          } else {
+            despEstiloVida += v;
+          }
+        }
+      });
+
+      let score = 0;
+      if (tRec > 0) {
+        const proporcao = (totalDesp / tRec);
+        score = Math.max(0, Math.min(100, (1 - proporcao) * 100));
+      }
+
+      const scoreEl = document.getElementById('radar-health-score');
+      const barEl = document.getElementById('radar-health-bar');
+      if (scoreEl) scoreEl.innerText = Math.round(score) + "%";
+      if (barEl) {
+        barEl.style.width = score + "%";
+        barEl.className = 'progress-bar ' + (score > 70 ? 'bg-success' : score > 40 ? 'bg-primary' : 'bg-danger');
+      }
+
+      const savingsPotential = despEstiloVida * 0.2;
+      document.getElementById('radar-savings-potential').innerText = formatarMoeda(savingsPotential);
+
+      let limitUsage = 0;
+      if (tRec > 0) {
+        limitUsage = (totalDesp / (tRec * 0.8)) * 100;
+      }
+      document.getElementById('radar-spending-limit').innerText = Math.round(limitUsage) + "%";
+
+      const insightsList = document.getElementById('radar-insights-list');
+      if (insightsList) {
+        insightsList.innerHTML = "";
+        const insights = [];
+
+        if (score < 50) {
+          insights.push({ icon: 'fa-triangle-exclamation', color: 'text-danger', title: 'Atenção ao Saldo', text: 'Suas despesas estão muito próximas ou acima da sua receita. Considere revisar gastos imediatos.' });
+        } else if (score > 80) {
+          insights.push({ icon: 'fa-star', color: 'text-success', title: 'Excelente Gestão', text: 'Você está mantendo uma ótima margem de segurança este mês.' });
+        }
+
+        if (despEstiloVida > despEssencial) {
+          insights.push({ icon: 'fa-couch', color: 'text-warning', title: 'Gastos de Estilo de Vida', text: 'Gastos com lazer e extras superaram os essenciais. Há oportunidade de economia.' });
+        }
+
+        if (totalDesp > tRec * 0.9) {
+          insights.push({ icon: 'fa-piggy-bank', color: 'text-info', title: 'Reserva de Emergência', text: 'Separe ao menos 10% da sua receita antes do mês começar.' });
+        }
+
+        if (insights.length === 0) {
+          insights.push({ icon: 'fa-check', color: 'text-primary', title: 'Tudo em Ordem', text: 'Continue acompanhando seus registros.' });
+        }
+
+        insights.forEach(ins => {
+          insightsList.innerHTML += `
+            <div class="d-flex align-items-start gap-3 p-3 rounded bg-light border-start border-4 ${ins.color.replace('text', 'border')}">
+              <i class="fa-solid ${ins.icon} ${ins.color} mt-1" style="font-size: 1.2rem;"></i>
+              <div>
+                <div class="fw-bold">${ins.title}</div>
+                <div class="small">${ins.text}</div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      drawRadarChartDistribution(despEssencial, despEstiloVida);
     }
 
+    function drawRadarChartDistribution(essencial, estilo) {
+      const chartDiv = document.getElementById('chart_radar_distribution');
+      if (!chartDiv) return;
+
+      try {
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ? '#F9FAFB' : '#64748B';
+
+        const data = google.visualization.arrayToDataTable([
+          ['Categoria', 'Valor'],
+          ['Essencial', essencial],
+          ['Lifestyle', estilo]
+        ]);
+
+        const options = {
+          pieHole: 0.6,
+          backgroundColor: 'transparent',
+          colors: ['#4361ee', '#ff9f1c'],
+          legend: { position: 'bottom', textStyle: { color: textColor, fontSize: 12 } },
+          chartArea: { width: '90%', height: '80%' },
+          pieSliceText: 'none',
+          tooltip: { textStyle: { fontSize: 13 } }
+        };
+
+        const chart = new google.visualization.PieChart(chartDiv);
+        chart.draw(data, options);
+      } catch (e) {
+        console.error("Erro ao desenhar gráfico Radar:", e);
+      }
+    }
+
+    // ==================== FUNÇÕES DE CONFIGURAÇÃO ====================
+    async function carregarConfigs() {
+      try {
+        const res = await callAppsScript('buscarConfigs');
+        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+      } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+      }
+    }
+
+    function renderizarConfigScreen() {
+      const listaT = document.getElementById('lista-titulares-config');
+      const listaC = document.getElementById('lista-cartoes-config');
+
+      if (!listaT || !listaC) return;
+
+      listaT.innerHTML = (configApp.titulares || []).map((t, index) => `
+        <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('titulares', ${index + 2}, this)">
+          ${t}
+          <button class="btn-remove-config" onclick="deleteConfig('titulares', '${t}')">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </li>
+      `).join('');
+
+      listaC.innerHTML = (configApp.cartoes || []).map(c => {
+        const valorUnico = `${c.nome}|${c.titular}`;
+        return `
+          <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('cartoes', ${c.linha}, this)">
+            <div>
+              <strong>${c.nome || ''}</strong> 
+              <small class="text-muted">(${c.titular || ''})</small>
+              <span class="dia-vencimento-badge">Dia ${c.diaVencimento || '10'}</span>
+            </div>
+            <button class="btn-remove-config" onclick="deleteConfig('cartoes', '${valorUnico}')">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </li>
+        `;
+      }).join('');
+
+      const listaCat = document.getElementById('lista-categorias-config');
+      if (listaCat) {
+        listaCat.innerHTML = (configApp.categorias || []).map(cat => `
+          <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('categorias', ${cat.linha}, this)">
+            <div style="flex:1">
+              <strong>${cat.label}</strong>
+              <div class="text-muted small">${cat.keywords || 'Sem palavras-chave'}</div>
+            </div>
+            <button class="btn-remove-config" onclick="deleteConfig('categorias', ${cat.linha})">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </li>
+        `).join('');
+      }
+
+      const selectTitu = document.getElementById('novo-cartao-titu');
+      if (selectTitu) {
+        selectTitu.innerHTML = (configApp.titulares || []).map(t =>
+          `<option value="${t}">${t}</option>`
+        ).join('');
+      }
+    }
+
+    function atualizarSelectsDinamicos() {
+      const htmlTitulares = (configApp.titulares || []).map(t => `<option value="${t}">${t}</option>`).join('');
+      document.querySelectorAll('.dynamic-titulares').forEach(sel => {
+        if (sel) sel.innerHTML = htmlTitulares;
+      });
+
+      const selCat = document.getElementById('cat-geral');
+      if (selCat) {
+        selCat.innerHTML = '<option value="">Sem Categoria</option>' + (configApp.categorias || []).map(c =>
+          `<option value="${c.label}">${c.label}</option>`
+        ).join('');
+      }
+
+      const selCartao = document.getElementById('cartao-c');
+      if (selCartao) {
+        selCartao.innerHTML = (configApp.cartoes || []).map(c =>
+          `<option value="${c.nome || ''}|${c.titular || ''}|${c.diaVencimento || '10'}">${c.nome || ''}</option>`
+        ).join('');
+      }
+    }
+
+    function toggleSettingsList(id, buttonId) {
+      const content = document.getElementById(id);
+      const btn = document.getElementById(buttonId);
+      if (content.classList.contains('hidden-content')) {
+        content.classList.remove('hidden-content');
+        btn.classList.remove('fa-eye');
+        btn.classList.add('fa-eye-slash');
+      } else {
+        content.classList.add('hidden-content');
+        btn.classList.remove('fa-eye-slash');
+        btn.classList.add('fa-eye');
+      }
+    }
+
+    // ==================== FUNÇÕES CRUD ====================
     function mudarAba(aba) {
       abaAtiva = aba;
       filtroCardManual = "";
@@ -3283,119 +3123,63 @@
       renderizarTabelaEAnalise();
     }
 
-    function limparCampos() {
-      document.getElementById('linha-edit').value = "";
-      document.getElementById('linha-edit-r').value = "";
-      document.getElementById('linha-edit-c').value = "";
-
-      document.getElementById('desc').value = "";
-      document.getElementById('val').value = "";
-      document.getElementById('cat-geral').value = "";
-      document.getElementById('parc').value = "1";
-      document.getElementById('desc-r').value = "";
-      document.getElementById('val-r').value = "";
-      document.getElementById('parc-r').value = "1";
-      document.getElementById('desc-c').value = "";
-      document.getElementById('cat-c').value = "";
-      document.getElementById('val-c').value = "";
-      document.getElementById('parc-c').value = "1";
-
-      document.getElementById('parc').disabled = false;
-      document.getElementById('parc-r').disabled = false;
-      document.getElementById('parc-c').disabled = false;
-
-      resetButtons();
+    function limparFiltrosManuais() {
+      filtroCardManual = "";
+      filtroTitularManual = "";
+      renderizarTabelaEAnalise();
     }
 
-    function resetButtons() {
-      const btns = ['btn-g', 'btn-r', 'btn-c'];
-      const boxes = ['box-g', 'box-r', 'box-c'];
-      btns.forEach(id => {
-        const b = document.getElementById(id);
-        if (b) {
-          b.innerText = "Salvar";
-          b.classList.remove('edit-btn');
-        }
-      });
-      boxes.forEach(id => {
-        const x = document.getElementById(id);
-        if (x) x.classList.remove('editing');
-      });
+    // ==================== FUNÇÕES DE EDIÇÃO INLINE ====================
+    function iniciarEdicaoCartao(linha) {
+      const item = (dCartoes || []).find(x => x.linha === linha);
+      if (!item) return;
+
+      editingRow = { linha: linha, tipo: 'cartao', item: item };
+      renderizarTabelaEAnalise();
+
+      setTimeout(() => {
+        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 100);
     }
 
-    function setEditState(btnId, boxId) {
-      resetButtons();
-      const b = document.getElementById(btnId);
-      if (b) {
-        b.innerText = "Confirmar Edição";
-        b.classList.add('edit-btn');
-      }
-      const box = document.getElementById(boxId);
-      if (box) box.classList.add('editing');
-      nav('novo');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    function iniciarEdicaoGeral(linha) {
+      const item = (dGeral || []).find(x => x.linha === linha);
+      if (!item) return;
 
-    function prepararEdicao(l) {
-      const i = dGeral.find(x => x.linha === l);
-      if (!i) return;
-
-      if (["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(i.descricao)) {
-        showToast('Itens consolidados devem ser editados nos cartões', 'warning');
+      if (["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(item.descricao)) {
+        showToast('Itens consolidados não podem ser editados diretamente', 'warning');
         return;
       }
 
-      document.getElementById('linha-edit').value = i.linha;
-      document.getElementById('desc').value = i.descricao;
-      document.getElementById('val').value = i.valor;
+      editingRow = { linha: linha, tipo: 'geral', item: item };
+      renderizarTabelaEAnalise();
 
-      if (i.vencimento) {
-        const partes = i.vencimento.split('/');
-        if (partes.length === 3) {
-          document.getElementById('venc-dia').value = partes[0];
-        }
-      }
-
-      document.getElementById('titu').value = i.titular;
-      document.getElementById('parc').disabled = true;
-      setEditState('btn-g', 'box-g');
+      setTimeout(() => {
+        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 100);
     }
 
-    function prepararReceita(l) {
-      const i = dReceitas.find(x => x.linha === l);
-      if (!i) return;
-      document.getElementById('linha-edit-r').value = i.linha;
-      document.getElementById('desc-r').value = i.descricao;
-      document.getElementById('val-r').value = i.valor;
+    function iniciarEdicaoReceita(linha) {
+      const item = (dReceitas || []).find(x => x.linha === linha);
+      if (!item) return;
 
-      if (i.recebimento) {
-        const partes = i.recebimento.split('/');
-        if (partes.length === 3) {
-          document.getElementById('rec-dia').value = partes[0];
-        }
-      }
+      editingRow = { linha: linha, tipo: 'receita', item: item };
+      renderizarTabelaEAnalise();
 
-      document.getElementById('titu-r').value = i.titular;
-      document.getElementById('parc-r').disabled = true;
-      setEditState('btn-r', 'box-r');
+      setTimeout(() => {
+        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 100);
     }
 
-    function prepararCartao(l) {
-      const i = dCartoes.find(x => x.linha === l);
-      if (!i) return;
-      document.getElementById('linha-edit-c').value = i.linha;
-      document.getElementById('desc-c').value = i.descricao;
-      document.getElementById('cat-c').value = i.categoria || '';
-      document.getElementById('val-c').value = i.valor;
-
-      const cartaoConfig = (configApp.cartoes || []).find(c => c.nome === i.cartao);
-      const diaVencimento = cartaoConfig ? cartaoConfig.diaVencimento : '10';
-
-      document.getElementById('cartao-c').value = i.cartao + "|" + i.titular + "|" + diaVencimento;
-      document.getElementById('parc-c').disabled = true;
-      setEditState('btn-c', 'box-c');
+    function cancelarEdicao() {
+      editingRow = null;
+      renderizarTabelaEAnalise();
     }
 
+    // ==================== FUNÇÕES DE SALVAMENTO ====================
     async function salvar() {
       const linhaEdit = document.getElementById('linha-edit').value;
       const descricao = document.getElementById('desc').value;
@@ -3529,17 +3313,146 @@
       }
     }
 
+    async function salvarEdicaoInlineCartao(linha) {
+      const cartaoSelect = document.getElementById(`edit-cartao-${linha}`);
+      const descInput = document.getElementById(`edit-desc-${linha}`);
+      const catInput = document.getElementById(`edit-cat-${linha}`);
+      const valInput = document.getElementById(`edit-val-${linha}`);
+
+      if (!cartaoSelect || !descInput || !catInput || !valInput) return;
+
+      const cartaoInfo = cartaoSelect.value.split('|');
+      const nomeCartao = cartaoInfo[0];
+      const titularCartao = cartaoInfo[1];
+      const diaVencimento = cartaoInfo[2] || '10';
+      const descricao = descInput.value.trim();
+      const categoria = catInput.value.trim();
+      const valor = valInput.value;
+
+      if (!descricao || !valor) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
+
+      const dados = {
+        linha: linha,
+        cartao: nomeCartao,
+        titular: titularCartao,
+        descricao: descricao,
+        categoria: categoria,
+        valor: valor,
+        vencimento: vencimento
+      };
+
+      showLoading();
+      try {
+        await callAppsScript('editarCartao', dados);
+        showToast('Cartão editado com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function salvarEdicaoInlineGeral(linha) {
+      const descInput = document.getElementById(`edit-desc-${linha}`);
+      const valInput = document.getElementById(`edit-val-${linha}`);
+      const tituSelect = document.getElementById(`edit-titu-${linha}`);
+      const catSelect = document.getElementById(`edit-cat-${linha}`);
+      const vencInput = document.getElementById(`edit-venc-${linha}`);
+
+      if (!descInput || !valInput || !tituSelect || !catSelect || !vencInput) return;
+
+      const descricao = descInput.value.trim();
+      const valor = valInput.value;
+      const titular = tituSelect.value;
+      const categoria = catSelect.value;
+      const vencimento = vencInput.value;
+
+      if (!descricao || !valor || !titular || !vencimento) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const dados = {
+        linha: linha,
+        descricao: descricao,
+        categoria: categoria,
+        valor: valor,
+        titular: titular,
+        vencimento: vencimento
+      };
+
+      showLoading();
+      try {
+        await callAppsScript('editarDespesa', dados);
+        showToast('Item editado com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function salvarEdicaoInlineReceita(linha) {
+      const descInput = document.getElementById(`edit-desc-${linha}`);
+      const valInput = document.getElementById(`edit-val-${linha}`);
+      const tituSelect = document.getElementById(`edit-titu-${linha}`);
+
+      if (!descInput || !valInput || !tituSelect) return;
+
+      const descricao = descInput.value.trim();
+      const valor = valInput.value;
+      const titular = tituSelect.value;
+
+      if (!descricao || !valor || !titular) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const recebimento = editingRow.item.recebimentoIso;
+
+      const dados = {
+        linha: linha,
+        descricao: descricao,
+        valor: valor,
+        titular: titular,
+        recebimento: recebimento
+      };
+
+      showLoading();
+      try {
+        await callAppsScript('editarReceita', dados);
+        showToast('Receita editada com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ==================== FUNÇÕES DE AÇÕES ====================
     async function atualizarFaturaAtual() {
       const competencia = ("0" + currentMonth).slice(-2) + "/" + currentYear;
 
       showActionModal(
-        `Deseja atualizar as faturas para a competência ${competencia}? 
-        Isso vai recalcular todos os valores de cartões para este mês.`,
+        `Deseja atualizar as faturas para a competência ${competencia}?`,
         async function () {
           showLoading();
           try {
             const res = await callAppsScript('atualizarFaturaCompetencia', { competencia });
-            showToast(`Faturas atualizadas! ${res.inseridos} inseridos, ${res.atualizados} atualizados.`, 'success');
+            showToast(`Faturas atualizadas!`, 'success');
             await carregar();
           } catch (error) {
             showToast('Erro ao atualizar: ' + error.message, 'danger');
@@ -3552,7 +3465,7 @@
     }
 
     async function pagar(l) {
-      const item = dGeral.find(x => x.linha === l);
+      const item = (dGeral || []).find(x => x.linha === l);
       if (!item) return;
 
       showActionModal(`Deseja marcar "${item.descricao}" como pago?`, async function () {
@@ -3570,7 +3483,7 @@
     }
 
     async function reverter(l) {
-      const item = dGeral.find(x => x.linha === l);
+      const item = (dGeral || []).find(x => x.linha === l);
       if (!item) return;
 
       showActionModal(`Deseja reverter "${item.descricao}" para "Em aberto"?`, async function () {
@@ -3588,7 +3501,7 @@
     }
 
     async function excluirDesp(l) {
-      const item = dGeral.find(x => x.linha === l);
+      const item = (dGeral || []).find(x => x.linha === l);
       if (!item) return;
 
       showActionModal(`Deseja realmente excluir "${item.descricao}"?`, async function () {
@@ -3606,7 +3519,7 @@
     }
 
     async function excluirRec(l) {
-      const item = dReceitas.find(x => x.linha === l);
+      const item = (dReceitas || []).find(x => x.linha === l);
       if (!item) return;
 
       showActionModal(`Deseja realmente excluir a receita "${item.descricao}"?`, async function () {
@@ -3624,7 +3537,7 @@
     }
 
     async function excluirCartao(l) {
-      const item = dCartoes.find(x => x.linha === l);
+      const item = (dCartoes || []).find(x => x.linha === l);
       if (!item) return;
 
       showActionModal(`Deseja realmente excluir "${item.descricao}" do cartão ${item.cartao}?`, async function () {
@@ -3641,92 +3554,22 @@
       }, 'delete');
     }
 
-    async function carregarConfigs() {
-      try {
-        const res = await callAppsScript('buscarConfigs');
-        configApp = res;
-        renderizarConfigScreen();
-        atualizarSelectsDinamicos();
-      } catch (error) {
-        console.error('Erro ao carregar configurações:', error);
+    function sugerirCategoria(desc) {
+      const d = (desc || '').toLowerCase();
+      const catInput = document.getElementById('cat-c');
+      if (!configApp.categorias) return;
+
+      for (const cat of configApp.categorias) {
+        const keywords = (cat.keywords || '').split(',').map(k => k.trim().toLowerCase());
+        if (keywords.some(k => k && d.includes(k))) {
+          catInput.value = cat.label;
+          return;
+        }
       }
+      catInput.value = '';
     }
 
-    function renderizarConfigScreen() {
-      const listaT = document.getElementById('lista-titulares-config');
-      const listaC = document.getElementById('lista-cartoes-config');
-
-      if (!listaT || !listaC) return;
-
-      listaT.innerHTML = (configApp.titulares || []).map((t, index) => `
-        <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('titulares', ${index + 2}, this)">
-          ${t}
-          <button class="btn-remove-config" onclick="deleteConfig('titulares', '${t}')">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        </li>
-      `).join('');
-
-      listaC.innerHTML = (configApp.cartoes || []).map(c => {
-        const valorUnico = `${c.nome}|${c.titular}`;
-        return `
-          <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('cartoes', ${c.linha}, this)">
-            <div>
-              <strong>${c.nome || ''}</strong> 
-              <small class="text-muted">(${c.titular || ''})</small>
-              <span class="dia-vencimento-badge">Dia ${c.diaVencimento || '10'}</span>
-            </div>
-            <button class="btn-remove-config" onclick="deleteConfig('cartoes', '${valorUnico}')">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </li>
-        `;
-      }).join('');
-
-      const listaCat = document.getElementById('lista-categorias-config');
-      if (listaCat) {
-        listaCat.innerHTML = (configApp.categorias || []).map(cat => `
-          <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('categorias', ${cat.linha}, this)">
-            <div style="flex:1">
-              <strong>${cat.label}</strong>
-              <div class="text-muted small">${cat.keywords || 'Sem palavras-chave'}</div>
-            </div>
-            <button class="btn-remove-config" onclick="deleteConfig('categorias', ${cat.linha})">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </li>
-        `).join('');
-      }
-
-      const selectTitu = document.getElementById('novo-cartao-titu');
-      if (selectTitu) {
-        selectTitu.innerHTML = (configApp.titulares || []).map(t =>
-          `<option value="${t}">${t}</option>`
-        ).join('');
-      }
-    }
-
-    function atualizarSelectsDinamicos() {
-      const htmlTitulares = (configApp.titulares || []).map(t => `<option value="${t}">${t}</option>`).join('');
-      document.querySelectorAll('.dynamic-titulares').forEach(sel => {
-        if (sel) sel.innerHTML = htmlTitulares;
-      });
-
-      const selCat = document.getElementById('cat-geral');
-      if (selCat) {
-        selCat.innerHTML = '<option value="">Sem Categoria</option>' + (configApp.categorias || []).map(c =>
-          `<option value="${c.label}">${c.label}</option>`
-        ).join('');
-      }
-
-      const selCartao = document.getElementById('cartao-c');
-      if (selCartao) {
-        selCartao.innerHTML = (configApp.cartoes || []).map(c =>
-          `<option value="${c.nome || ''}|${c.titular || ''}|${c.diaVencimento || '10'}">${c.nome || ''} </option>`
-        ).join('');
-      }
-    }
-
+    // ==================== CONFIGURAÇÕES ====================
     async function deleteConfig(tipo, valor) {
       let mensagem;
       if (tipo === 'titulares') {
@@ -3735,7 +3578,7 @@
         const partes = valor.split('|');
         mensagem = `Deseja realmente remover o cartão "${partes[0]}" (${partes[1]})?`;
       } else if (tipo === 'categorias') {
-        const cat = configApp.categorias.find(c => c.linha === valor);
+        const cat = (configApp.categorias || []).find(c => c.linha === valor);
         mensagem = `Deseja realmente remover a categoria "${cat ? cat.label : valor}"?`;
       }
 
@@ -3743,7 +3586,7 @@
         showLoading();
         try {
           const res = await callAppsScript('removerConfigItem', { tipo, valor });
-          configApp = res;
+          configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
           renderizarConfigScreen();
           atualizarSelectsDinamicos();
           showToast("Removido com sucesso!", "success");
@@ -3754,87 +3597,6 @@
         }
       }, 'delete');
     }
-
-    function iniciarEdicaoConfig(tipo, linha, elemento) {
-      const originalHtml = elemento.innerHTML;
-      if (tipo === 'titulares') {
-        const titular = configApp.titulares[linha - 2];
-        elemento.innerHTML = `<input type="text" class="form-control form-control-sm" value="${titular}" onkeydown="if(event.key==='Enter') salvarEdicaoConfig('${tipo}', ${linha}, this.value); if(event.key==='Escape') renderizarConfigScreen()">`;
-      } else if (tipo === 'cartoes') {
-        const cartao = configApp.cartoes.find(c => c.linha === linha);
-        elemento.innerHTML = `
-          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
-            <input type="text" class="form-control form-control-sm" value="${cartao.nome}" placeholder="Nome" onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
-            <select class="form-select form-select-sm">
-              ${configApp.titulares.map(t => `<option value="${t}" ${t === cartao.titular ? 'selected' : ''}>${t}</option>`).join('')}
-            </select>
-            <input type="number" class="form-control form-control-sm" value="${cartao.diaVencimento}" placeholder="Dia Venc." onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
-            <div class="d-flex gap-1 mt-1">
-              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCartao(${linha}, this.parentElement.parentElement)">✔</button>
-              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
-            </div>
-          </div>
-        `;
-      } else if (tipo === 'categorias') {
-        const cat = configApp.categorias.find(c => c.linha === linha);
-        elemento.innerHTML = `
-          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
-            <input type="text" class="form-control form-control-sm" value="${cat.label}" placeholder="Categoria" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
-            <input type="text" class="form-control form-control-sm" value="${cat.keywords}" placeholder="Palavras-chave" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
-            <div class="d-flex gap-1 mt-1">
-              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCategoria(${linha}, this.parentElement.parentElement)">✔</button>
-              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
-            </div>
-          </div>
-        `;
-      }
-      const input = elemento.querySelector('input');
-      if (input) input.focus();
-    }
-
-    function toggleVisibility(id, btn) {
-      const el = document.getElementById(id);
-      if (el.style.display === 'none') {
-        el.style.display = 'block';
-        btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
-      } else {
-        el.style.display = 'none';
-        btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
-      }
-    }
-
-    window.toggleVisibility = toggleVisibility;
-
-    async function salvarEdicaoConfig(tipo, linha, valor) {
-      showLoading();
-      try {
-        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor });
-        configApp = res;
-        renderizarConfigScreen();
-        atualizarSelectsDinamicos();
-        showToast("Alterado com sucesso!");
-      } catch (error) {
-        showToast("Erro: " + error.message, "danger");
-      } finally {
-        hideLoading();
-      }
-    }
-
-    window.salvarEdicaoConfig = salvarEdicaoConfig;
-
-    window.confirmarEdicaoCartao = function (linha, container) {
-      const inputs = container.querySelectorAll('input, select');
-      const dados = [inputs[0].value, inputs[1].value, inputs[2].value];
-      salvarEdicaoConfig('cartoes', linha, dados);
-    }
-
-    window.confirmarEdicaoCategoria = function (linha, container) {
-      const inputs = container.querySelectorAll('input');
-      const dados = [inputs[0].value, inputs[1].value];
-      salvarEdicaoConfig('categorias', linha, dados);
-    }
-
-    window.iniciarEdicaoConfig = iniciarEdicaoConfig;
 
     async function addConfig(tipo, idInput) {
       let valor;
@@ -3852,7 +3614,7 @@
       showLoading();
       try {
         const res = await callAppsScript('salvarConfigItem', { tipo, valor });
-        configApp = res;
+        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
         renderizarConfigScreen();
         atualizarSelectsDinamicos();
         showToast("Configuração salva!");
@@ -3868,6 +3630,117 @@
         hideLoading();
       }
     }
+
+    function iniciarEdicaoConfig(tipo, linha, elemento) {
+      if (tipo === 'titulares') {
+        const titular = configApp.titulares[linha - 2];
+        elemento.innerHTML = `<input type="text" class="form-control form-control-sm" value="${titular}" onkeydown="if(event.key==='Enter') salvarEdicaoConfig('${tipo}', ${linha}, this.value); if(event.key==='Escape') renderizarConfigScreen()">`;
+      } else if (tipo === 'cartoes') {
+        const cartao = (configApp.cartoes || []).find(c => c.linha === linha);
+        elemento.innerHTML = `
+          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
+            <input type="text" class="form-control form-control-sm" value="${cartao.nome}" placeholder="Nome" onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
+            <select class="form-select form-select-sm">
+              ${(configApp.titulares || []).map(t => `<option value="${t}" ${t === cartao.titular ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+            <input type="number" class="form-control form-control-sm" value="${cartao.diaVencimento}" placeholder="Dia Venc." onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
+            <div class="d-flex gap-1 mt-1">
+              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCartao(${linha}, this.parentElement.parentElement)">✔</button>
+              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
+            </div>
+          </div>
+        `;
+      } else if (tipo === 'categorias') {
+        const cat = (configApp.categorias || []).find(c => c.linha === linha);
+        elemento.innerHTML = `
+          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
+            <input type="text" class="form-control form-control-sm" value="${cat.label}" placeholder="Categoria" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
+            <input type="text" class="form-control form-control-sm" value="${cat.keywords}" placeholder="Palavras-chave" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
+            <div class="d-flex gap-1 mt-1">
+              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCategoria(${linha}, this.parentElement.parentElement)">✔</button>
+              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
+            </div>
+          </div>
+        `;
+      }
+      const input = elemento.querySelector('input');
+      if (input) input.focus();
+    }
+
+    function confirmarEdicaoCartao(linha, container) {
+      const inputs = container.querySelectorAll('input, select');
+      const dados = [inputs[0].value, inputs[1].value, inputs[2].value];
+      salvarEdicaoConfig('cartoes', linha, dados);
+    }
+
+    function confirmarEdicaoCategoria(linha, container) {
+      const inputs = container.querySelectorAll('input');
+      const dados = [inputs[0].value, inputs[1].value];
+      salvarEdicaoConfig('categorias', linha, dados);
+    }
+
+    async function salvarEdicaoConfig(tipo, linha, valor) {
+      showLoading();
+      try {
+        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor });
+        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+        showToast("Alterado com sucesso!");
+      } catch (error) {
+        showToast("Erro: " + error.message, "danger");
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ==================== TEMA ====================
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      updateThemeIcon(isDark);
+
+      if (typeof renderizarTabelaEAnalise === 'function') {
+        renderizarTabelaEAnalise();
+      }
+    }
+
+    function updateThemeIcon(isDark) {
+      const icon = document.querySelector('#theme-toggle i');
+      if (icon) {
+        icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      }
+    }
+
+    function applyInitialTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        updateThemeIcon(true);
+      } else {
+        updateThemeIcon(false);
+      }
+    }
+
+    // ==================== INICIALIZAÇÃO ====================
+    document.addEventListener('keydown', function (e) {
+      if (!editingRow) return;
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (editingRow.tipo === 'cartao') {
+          salvarEdicaoInlineCartao(editingRow.linha);
+        } else if (editingRow.tipo === 'geral') {
+          salvarEdicaoInlineGeral(editingRow.linha);
+        } else if (editingRow.tipo === 'receita') {
+          salvarEdicaoInlineReceita(editingRow.linha);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelarEdicao();
+      }
+    });
 
     window.onload = function () {
       const today = new Date().toISOString().split('T')[0];
@@ -3911,11 +3784,7 @@
         };
       }
 
-      carregar();
-
-      applyInitialTheme();
-
-      // Auto-save para as notas (debounce)
+      // Auto-save para as notas
       const notesArea = document.getElementById('dashboard-notes');
       if (notesArea) {
         let timeout;
@@ -3942,45 +3811,54 @@
         });
       }
 
-      setTimeout(async function () {
-        try {
-          const res = await callAppsScript('buscarConfigs');
-          configApp = res;
-          renderizarConfigScreen();
-          atualizarSelectsDinamicos();
-        } catch (error) {
-          console.error('Erro ao carregar configurações:', error);
-        }
+      applyInitialTheme();
+      
+      // Carregar dados
+      setTimeout(() => {
+        carregar();
+        carregarConfigs();
       }, 500);
     };
 
-    function toggleTheme() {
-      document.body.classList.toggle('dark-mode');
-      const isDark = document.body.classList.contains('dark-mode');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      updateThemeIcon(isDark);
-
-      if (typeof renderizarTabelaEAnalise === 'function') {
-        renderizarTabelaEAnalise();
-      }
-    }
-
-    function updateThemeIcon(isDark) {
-      const icon = document.querySelector('#theme-toggle i');
-      if (icon) {
-        icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-      }
-    }
-
-    function applyInitialTheme() {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        updateThemeIcon(true);
-      } else {
-        updateThemeIcon(false);
-      }
-    }
+    // Expor funções globais necessárias
+    window.nav = nav;
+    window.changeMonth = changeMonth;
+    window.abrirModalPeriodo = abrirModalPeriodo;
+    window.mudarAnoModal = mudarAnoModal;
+    window.selecionarMesModal = selecionarMesModal;
+    window.toggleTheme = toggleTheme;
+    window.carregar = carregar;
+    window.mostrarFormContextual = mostrarFormContextual;
+    window.fecharForms = fecharForms;
+    window.fecharFormFora = fecharFormFora;
+    window.salvar = salvar;
+    window.salvarReceita = salvarReceita;
+    window.salvarCartao = salvarCartao;
+    window.atualizarFaturaAtual = atualizarFaturaAtual;
+    window.pagar = pagar;
+    window.reverter = reverter;
+    window.excluirDesp = excluirDesp;
+    window.excluirRec = excluirRec;
+    window.excluirCartao = excluirCartao;
+    window.mudarAba = mudarAba;
+    window.filtrarCartaoRapido = filtrarCartaoRapido;
+    window.filtrarTitularRapido = filtrarTitularRapido;
+    window.limparFiltrosManuais = limparFiltrosManuais;
+    window.iniciarEdicaoCartao = iniciarEdicaoCartao;
+    window.iniciarEdicaoGeral = iniciarEdicaoGeral;
+    window.iniciarEdicaoReceita = iniciarEdicaoReceita;
+    window.cancelarEdicao = cancelarEdicao;
+    window.salvarEdicaoInlineCartao = salvarEdicaoInlineCartao;
+    window.salvarEdicaoInlineGeral = salvarEdicaoInlineGeral;
+    window.salvarEdicaoInlineReceita = salvarEdicaoInlineReceita;
+    window.sugerirCategoria = sugerirCategoria;
+    window.toggleSettingsList = toggleSettingsList;
+    window.deleteConfig = deleteConfig;
+    window.addConfig = addConfig;
+    window.iniciarEdicaoConfig = iniciarEdicaoConfig;
+    window.confirmarEdicaoCartao = confirmarEdicaoCartao;
+    window.confirmarEdicaoCategoria = confirmarEdicaoCategoria;
+    window.renderizarConfigScreen = renderizarConfigScreen;
   </script>
 </body>
 
