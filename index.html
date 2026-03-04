@@ -1356,19 +1356,29 @@
       }
 
       .topbar {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 12px !important;
+        display: grid !important;
+        grid-template-areas:
+          "brand actions"
+          "filters filters" !important;
+        grid-template-columns: 1fr auto;
+        gap: 12px 10px !important;
+        align-items: center !important;
       }
 
-      .topbar-mobile-row-1 {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
+      .topbar-brand {
+        grid-area: brand;
       }
 
-      .topbar-mobile-row-2 {
+      .topbar-actions {
+        grid-area: actions;
+      }
+
+      .topbar-controls {
+        display: contents;
+      }
+
+      .controls {
+        grid-area: filters;
         display: flex;
         justify-content: center;
         width: 100%;
@@ -1420,19 +1430,23 @@
       }
     }
 
-    /* Restauração Desktop */
     @media (min-width: 769px) {
       .topbar {
+        display: flex !important;
         flex-direction: row !important;
+        justify-content: space-between !important;
         align-items: center !important;
         gap: 0 !important;
       }
 
-      .topbar-mobile-row-1 {
-        width: auto !important;
+      .topbar-controls {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        gap: 8px !important;
       }
 
-      .topbar-mobile-row-2 {
+      .topbar-brand {
         width: auto !important;
       }
 
@@ -1609,15 +1623,19 @@
 
     <main class="content">
 
-      <header class="topbar d-flex justify-content-between align-items-center mb-4">
-        <div class="topbar-mobile-row-1">
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-primary d-md-none" onclick="toggleSidebarMobile()" title="Menu">
-              <i class="fa-solid fa-bars"></i>
-            </button>
-            <h2 class="fw-bold m-0" id="page-title" style="font-size: 1.15rem;">Dashboard Financeiro</h2>
+      <header class="topbar mb-4">
+        <div class="topbar-brand">
+          <h2 class="fw-bold m-0" id="page-title" style="font-size: 1.15rem;">Dashboard Financeiro</h2>
+        </div>
+        <div class="topbar-controls">
+          <div class="controls">
+            <button onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="date-display mx-3" title="Clique para selecionar o período" onclick="abrirModalPeriodo()">
+              <span id="lblMes">FEV</span> <span id="lblAno">2024</span>
+            </div>
+            <button onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
-          <div class="d-flex align-items-center gap-2">
+          <div class="topbar-actions d-flex align-items-center gap-2">
             <button class="btn btn-sm btn-outline-primary" id="theme-toggle" onclick="toggleTheme()"
               title="Alternar Tema">
               <i class="fa-solid fa-moon"></i>
@@ -1625,15 +1643,6 @@
             <button class="btn btn-sm btn-outline-primary" onclick="carregar()">
               <i class="fa-solid fa-refresh"></i>
             </button>
-          </div>
-        </div>
-        <div class="topbar-mobile-row-2">
-          <div class="controls d-flex align-items-center">
-            <button onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-            <div class="date-display mx-3" title="Clique para selecionar o período" onclick="abrirModalPeriodo()">
-              <span id="lblMes">FEV</span> <span id="lblAno">2024</span>
-            </div>
-            <button onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
         </div>
       </header>
