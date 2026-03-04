@@ -1672,10 +1672,8 @@
         </div>
       </div>
 
-
       <!-- ABA ANÁLISE (Compartilhada) -->
       <div id="view-geral" class="view">
-        <!-- Mantendo o ID para compatibilidade com o sistema de abas, mas o nav vai gerenciar qual dado mostrar -->
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h3 class="fw-bold m-0"></h3>
           <button id="btn-atualizar-faturas" class="btn btn-primary" onclick="atualizarFaturaAtual()">
@@ -2135,7 +2133,7 @@
     let editingRow = null;
     let anoModalAtivo = currentYear;
 
-    // URL da API do Google Apps Script (ATUALIZADA)
+    // URL da API do Google Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycby9IwfWuP5U95sn2m5MHOuc8y2slnFoj36v_MVbfr8RYwPyUNELoNfpfc9UbcE26_li/exec";
 
     // ==================== FUNÇÃO PRINCIPAL DA API (JSONP) ====================
@@ -2153,7 +2151,7 @@
           
           window[callbackName] = function(response) {
             delete window[callbackName];
-            document.body.removeChild(script);
+            if (script.parentNode) document.body.removeChild(script);
             clearTimeout(timeout);
             
             if (response && response.error) {
@@ -2445,7 +2443,93 @@
       }
     }
 
-    // ==================== FUNÇÕES DE RENDERIZAÇÃO ====================
+    // ==================== FUNÇÃO PARA ÍCONES ====================
+    function getIconByDescription(desc) {
+      const d = (desc || '').toLowerCase();
+      if (d.includes('mercado') || d.includes('supermercado') || d.includes('feira')) return 'fa-cart-shopping';
+      if (d.includes('combustivel') || d.includes('gasolina') || d.includes('posto') || d.includes('carro')) return 'fa-gas-pump';
+      if (d.includes('energia') || d.includes('luz') || d.includes('celpa') || d.includes('equatorial')) return 'fa-bolt';
+      if (d.includes('agua') || d.includes('cosanpa')) return 'fa-droplet';
+      if (d.includes('internet') || d.includes('wifi') || d.includes('netflix') || d.includes('spotify') || d.includes('assina')) return 'fa-globe';
+      if (d.includes('aluguel') || d.includes('casa') || d.includes('condominio')) return 'fa-house';
+      if (d.includes('saude') || d.includes('farmacia') || d.includes('medico') || d.includes('unimed')) return 'fa-heart-pulse';
+      if (d.includes('lanche') || d.includes('pizza') || d.includes('ifood') || d.includes('restaurante')) return 'fa-utensils';
+      if (d.includes('cartao') || d.includes('fatura') || d.includes('nubank') || d.includes('inter') || d.includes('mercado pago')) return 'fa-credit-card';
+      if (d.includes('transferencia') || d.includes('pix') || d.includes('pagamento')) return 'fa-money-bill-transfer';
+      return 'fa-dollar-sign';
+    }
+
+    // ==================== RENDERIZAR EXTRATO DETALHADO (TODOS OS MESES) ====================
+    function renderizarExtratoDetalhado() {
+      const extratoBody = document.getElementById('corpoExtratoDashboard');
+      if (!extratoBody) return;
+
+      extratoBody.innerHTML = "";
+      
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const hojeIso = hoje.toISOString().split('T')[0];
+
+      // Pegar TODAS as despesas (sem filtrar por mês)
+      let todasDespesas = [...(dGeral || [])];
+      
+      // Ordenar por data (mais recentes primeiro)
+      todasDespesas.sort((a, b) => {
+        const dateA = a.vencimentoIso || '2000-01-01';
+        const dateB = b.vencimentoIso || '2000-01-01';
+        return dateB.localeCompare(dateA);
+      });
+
+      if (todasDespesas.length === 0) {
+        extratoBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Nenhuma despesa encontrada</td></tr>';
+        return;
+      }
+
+      // Mostrar últimas 50 despesas
+      todasDespesas.slice(0, 50).forEach(i => {
+        let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
+        let labelStatus = i.status || '';
+        let dateLabel = `${i.vencimento || ''}`;
+
+        if (i.status === 'Em aberto') {
+          if (i.vencimentoIso < hojeIso) {
+            statusClass = 'status-vencida';
+            labelStatus = 'Vencida';
+            dateLabel = `Venceu em ${i.vencimento}`;
+          } else if (i.vencimentoIso === hojeIso) {
+            statusClass = 'status-hoje';
+            labelStatus = 'Hoje';
+          }
+        }
+
+        extratoBody.innerHTML += `
+          <tr>
+            <td class="align-middle">
+              <div class="d-flex align-items-center gap-3">
+                <div class="icon-circle">
+                  <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
+                </div>
+                <div>
+                  <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''}</div>
+                  <small class="text-muted">${dateLabel} • ${i.competencia || ''}</small>
+                </div>
+              </div>
+            </td>
+            <td class="align-middle text-end" style="white-space: nowrap;">
+              <div class="fw-bold" style="font-size:0.9rem">${formatarMoeda(i.valor)}</div>
+              <div class="mt-1">
+                <span class="${statusClass}" style="font-size:0.65rem; padding: 2px 6px;">${labelStatus}</span>
+              </div>
+            </td>
+          </tr>`;
+      });
+
+      if (todasDespesas.length > 50) {
+        extratoBody.innerHTML += `<tr><td colspan="3" class="text-center text-muted py-2">... e mais ${todasDespesas.length - 50} registros</td></tr>`;
+      }
+    }
+
+    // ==================== FUNÇÃO PRINCIPAL DE RENDERIZAÇÃO ====================
     function renderizarTabelaEAnalise() {
       const fD = document.getElementById('f-desc') ? document.getElementById('f-desc').value.toLowerCase() : '';
       const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
@@ -2479,6 +2563,7 @@
         "Sicoob Clássico": 0
       };
 
+      // Calcular totais para cards (APENAS MÊS ATUAL)
       (dGeral || []).forEach(i => {
         if (i.competencia === compSelecionada) {
           const v = Number(i.valor || 0);
@@ -2497,6 +2582,7 @@
         }
       });
 
+      // Atualizar cards
       const setV = (id, v) => {
         const e = document.getElementById(id);
         if (e) e.innerText = formatarMoeda(v || 0);
@@ -2508,7 +2594,6 @@
       setV('total-sp', tCrd["Sicoob Platinum"]);
       setV('total-sc', tCrd["Sicoob Clássico"]);
 
-      // Atualizar nomes dos titulares nos cards de filtro
       const cardMap = {
         'Nubank': 'label-titu-nu',
         'Mercado Pago': 'label-titu-mp',
@@ -2530,188 +2615,81 @@
       const btnL = document.getElementById('btn-limpar-filtro-c');
       if (btnL) btnL.style.display = (filtroCardManual || filtroTitularManual) ? "inline-block" : "none";
 
-      const sortD = (a) => a.sort((x, y) => {
-        if (x.status && y.status && x.status !== y.status) {
-          return x.status === 'Em aberto' ? -1 : 1;
-        }
-        return new Date(x.vencimentoIso || x.recebimentoIso || '2000-01-01') - new Date(y.vencimentoIso || y.recebimentoIso || '2000-01-01');
-      });
-
-      if (document.getElementById('view-dashboard').classList.contains('active')) {
-        drawTitularChart(pTit);
-        drawStatusChart(tPag, tAbe);
-        atualizarDashboard();
-      }
-
+      // Renderizar tabela conforme aba ativa (sempre mês atual)
       if (abaAtiva === 'receitas') {
         thead.innerHTML = `<tr><th>Competência</th><th>Titular</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr>`;
-        sortD(dReceitas || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD)).forEach(i => {
-          if (editingRow && editingRow.linha === i.linha && editingRow.tipo === 'receita') {
-            tbody.innerHTML += `
-              <tr class="editing-row" data-linha="${i.linha}">
-                <td><span class="badge-comp">${i.competencia || ''}</span></td>
-                <td>
-                  <select class="inline-edit-select" id="edit-titu-${i.linha}">
-                    ${(configApp.titulares || []).map(t =>
-              `<option value="${t}" ${t === i.titular ? 'selected' : ''}>${t}</option>`
-            ).join('')}
-                  </select>
-                </td>
-                <td><input type="text" class="inline-edit-input" id="edit-desc-${i.linha}" value="${i.descricao}"></td>
-                <td><input type="number" step="0.01" class="inline-edit-input" id="edit-val-${i.linha}" value="${i.valor}"></td>
-                <td>
-                  <div class="inline-edit-actions">
-                    <button class="inline-save-btn" onclick="salvarEdicaoInlineReceita(${i.linha})" title="Salvar (Enter)">
-                      <i class="fa-solid fa-check"></i>
-                    </button>
-                    <button class="inline-cancel-btn" onclick="cancelarEdicao()" title="Cancelar (ESC)">
-                      <i class="fa-solid fa-times"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>`;
-          } else {
-            tbody.innerHTML += `<tr ondblclick="iniciarEdicaoReceita(${i.linha})" style="cursor: pointer;" data-linha="${i.linha}">
-              <td><span class="badge-comp">${i.competencia || ''}</span></td>
-              <td>${i.titular || ''}</td>
-              <td>${i.descricao || ''}</td>
-              <td>${formatarMoeda(i.valor)}</td>
-              <td>
-                <button class="btn-action" style="color:var(--danger)" onclick="excluirRec(${i.linha}); event.stopPropagation();" title="Excluir">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </td>
-            </tr>`;
-          }
+        (dReceitas || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD)).forEach(i => {
+          tbody.innerHTML += `<tr>
+            <td><span class="badge-comp">${i.competencia || ''}</span></td>
+            <td>${i.titular || ''}</td>
+            <td>${i.descricao || ''}</td>
+            <td>${formatarMoeda(i.valor)}</td>
+            <td>
+              <button class="btn-action" style="color:var(--danger)" onclick="excluirRec(${i.linha}); event.stopPropagation();" title="Excluir">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>`;
         });
       }
       else if (abaAtiva === 'geral') {
         thead.innerHTML = `<tr><th>Status</th><th>Titular</th><th>Descrição</th><th>Categoria</th><th>Venc.</th><th>Parc.</th><th>Valor</th><th>Ações</th></tr>`;
-        sortD(dGeral || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
-          const isConsolidado = ["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(i.descricao);
+        (dGeral || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
+          let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
+          let labelStatus = i.status || '';
 
-          if (editingRow && editingRow.linha === i.linha && editingRow.tipo === 'geral' && !isConsolidado) {
-            let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
-            if (i.status === 'Em aberto') {
-              if (i.vencimentoIso < hojeIso) statusClass = 'status-vencida';
-              else if (i.vencimentoIso === hojeIso) statusClass = 'status-hoje';
+          if (i.status === 'Em aberto') {
+            if (i.vencimentoIso < hojeIso) {
+              statusClass = 'status-vencida';
+              labelStatus = 'Vencida';
+            } else if (i.vencimentoIso === hojeIso) {
+              statusClass = 'status-hoje';
+              labelStatus = 'Hoje';
             }
+          }
 
-            tbody.innerHTML += `
-              <tr class="editing-row" data-linha="${i.linha}">
-                <td><span class="${statusClass}">${i.status || ''}</span></td>
-                <td>
-                  <select class="inline-edit-select" id="edit-titu-${i.linha}">
-                    ${(configApp.titulares || []).map(t =>
-              `<option value="${t}" ${t === i.titular ? 'selected' : ''}>${t}</option>`
-            ).join('')}
-                  </select>
-                </td>
-                <td><input type="text" class="inline-edit-input" id="edit-desc-${i.linha}" value="${i.descricao}"></td>
-                <td>
-                  <select class="inline-edit-select" id="edit-cat-${i.linha}">
-                    <option value="" ${!i.categoria ? 'selected' : ''}>Sem Categoria</option>
-                    ${(configApp.categorias || []).map(c =>
-              `<option value="${c.label}" ${c.label === i.categoria ? 'selected' : ''}>${c.label}</option>`
-            ).join('')}
-                  </select>
-                </td>
-                <td><input type="date" class="inline-edit-input" id="edit-venc-${i.linha}" value="${i.vencimentoIso || ''}"></td>
-                <td><input type="text" class="inline-edit-input" id="edit-parc-${i.linha}" value="${i.parcela}" disabled></td>
-                <td><input type="number" step="0.01" class="inline-edit-input" id="edit-val-${i.linha}" value="${i.valor}"></td>
-                <td>
-                  <div class="inline-edit-actions">
-                    <button class="inline-save-btn" onclick="salvarEdicaoInlineGeral(${i.linha})" title="Salvar (Enter)">
-                      <i class="fa-solid fa-check"></i>
-                    </button>
-                    <button class="inline-cancel-btn" onclick="cancelarEdicao()" title="Cancelar (ESC)">
-                      <i class="fa-solid fa-times"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>`;
-          } else {
-            let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
-            let labelStatus = i.status || '';
-
-            if (i.status === 'Em aberto') {
-              if (i.vencimentoIso < hojeIso) {
-                statusClass = 'status-vencida';
-                labelStatus = 'Vencida';
-              } else if (i.vencimentoIso === hojeIso) {
-                statusClass = 'status-hoje';
-                labelStatus = 'Hoje';
-              }
-            }
-
-            tbody.innerHTML += `<tr ondblclick="${!isConsolidado ? 'iniciarEdicaoGeral(' + i.linha + ')' : ''}" style="cursor: ${!isConsolidado ? 'pointer' : 'default'};" data-linha="${i.linha}">
-              <td><span class="${statusClass}">${labelStatus}</span></td>
-              <td>${i.titular || ''}</td>
-                <td>${i.descricao || ''}</td>
-                <td><span class="badge-status" style="background:var(--bg-body); color:var(--text-muted); font-size:0.7rem">${i.categoria || ''}</span></td>
-                <td>${i.vencimento || ''}</td>
-              <td>${i.parcela || ''}</td>
-              <td>${formatarMoeda(i.valor)}</td>
-              <td>
-                ${i.status === 'Em aberto' ?
+          tbody.innerHTML += `<tr>
+            <td><span class="${statusClass}">${labelStatus}</span></td>
+            <td>${i.titular || ''}</td>
+            <td>${i.descricao || ''}</td>
+            <td><span class="badge-cat">${i.categoria || ''}</span></td>
+            <td>${i.vencimento || ''}</td>
+            <td>${i.parcela || ''}</td>
+            <td>${formatarMoeda(i.valor)}</td>
+            <td>
+              ${i.status === 'Em aberto' ?
                 `<button class="btn-action" style="color:var(--gray)" onclick="pagar(${i.linha}); event.stopPropagation();" title="Pagar">⟲</button>` :
                 `<button class="btn-action" style="color:var(--success)" onclick="reverter(${i.linha}); event.stopPropagation();" title="Reverter">✔</button>`}
-                <button class="btn-action" style="color:var(--danger)" onclick="excluirDesp(${i.linha}); event.stopPropagation();" title="Excluir">✕</button>
-              </td>
-            </tr>`;
-          }
+              <button class="btn-action" style="color:var(--danger)" onclick="excluirDesp(${i.linha}); event.stopPropagation();" title="Excluir">✕</button>
+            </td>
+          </tr>`;
         });
       }
       else if (abaAtiva === 'cartoes') {
         thead.innerHTML = `<tr><th>Cartão</th><th>Titular</th><th>Item</th><th>Categoria</th><th>Parc.</th><th>Valor</th><th>Ações</th></tr>`;
-        sortD(dCartoes || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroCardManual || i.cartao === filtroCardManual)).forEach(i => {
-          if (editingRow && editingRow.linha === i.linha && editingRow.tipo === 'cartao') {
-            tbody.innerHTML += `
-              <tr class="editing-row" data-linha="${i.linha}">
-                <td>
-                  <select class="inline-edit-select" id="edit-cartao-${i.linha}">
-                    ${(configApp.cartoes || []).map(c =>
-              `<option value="${c.nome}|${c.titular}|${c.diaVencimento || '10'}" ${c.nome === i.cartao && c.titular === i.titular ? 'selected' : ''}>${c.nome} (${c.titular})</option>`
-            ).join('')}
-                  </select>
-                </td>
-                <td><span class="text-muted">${i.titular}</span></td>
-                <td><input type="text" class="inline-edit-input" id="edit-desc-${i.linha}" value="${i.descricao}"></td>
-                <td><input type="text" class="inline-edit-input" id="edit-cat-${i.linha}" value="${i.categoria || ''}"></td>
-                <td><input type="text" class="inline-edit-input" id="edit-parc-${i.linha}" value="${i.parcela}" placeholder="X/Y" disabled></td>
-                <td><input type="number" step="0.01" class="inline-edit-input" id="edit-val-${i.linha}" value="${i.valor}"></td>
-                <td>
-                  <div class="inline-edit-actions">
-                    <button class="inline-save-btn" onclick="salvarEdicaoInlineCartao(${i.linha})" title="Salvar (Enter)">
-                      <i class="fa-solid fa-check"></i>
-                    </button>
-                    <button class="inline-cancel-btn" onclick="cancelarEdicao()" title="Cancelar (ESC)">
-                      <i class="fa-solid fa-times"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>`;
-          } else {
-            tbody.innerHTML += `<tr ondblclick="iniciarEdicaoCartao(${i.linha})" style="cursor: pointer;" data-linha="${i.linha}">
-              <td>${i.cartao || ''}</td>
-              <td>${i.titular || ''}</td>
-              <td>${i.descricao || ''}</td>
-              <td><span class="badge-cat">${i.categoria || ''}</span></td>
-              <td>${i.parcela || ''}</td>
-              <td>${formatarMoeda(i.valor)}</td>
-              <td>
-                <button class="btn-action" style="color:var(--danger)" onclick="excluirCartao(${i.linha}); event.stopPropagation();" title="Excluir">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </td>
-            </tr>`;
-          }
+        (dCartoes || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroCardManual || i.cartao === filtroCardManual)).forEach(i => {
+          tbody.innerHTML += `<tr>
+            <td>${i.cartao || ''}</td>
+            <td>${i.titular || ''}</td>
+            <td>${i.descricao || ''}</td>
+            <td><span class="badge-cat">${i.categoria || ''}</span></td>
+            <td>${i.parcela || ''}</td>
+            <td>${formatarMoeda(i.valor)}</td>
+            <td>
+              <button class="btn-action" style="color:var(--danger)" onclick="excluirCartao(${i.linha}); event.stopPropagation();" title="Excluir">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>`;
         });
       }
 
       if (tbody.innerHTML === "") {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhum registro encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhum registro encontrado para este mês</td></tr>';
       }
+
+      // Renderizar extrato detalhado com TODOS os meses
+      renderizarExtratoDetalhado();
 
       if (document.getElementById('view-dashboard').classList.contains('active')) {
         atualizarDashboard();
@@ -2725,9 +2703,6 @@
 
     function atualizarDashboard() {
       const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-      const hojeIso = hoje.toISOString().split('T')[0];
 
       let tRec = 0, tPag = 0, tAbe = 0, tFat = 0;
 
@@ -2753,93 +2728,6 @@
       document.getElementById('totalDespGeral').innerText = formatarMoeda(despTotal);
       document.getElementById('totalFaturas').innerText = formatarMoeda(tFat);
       document.getElementById('totalSobras').innerText = formatarMoeda(tRec - despTotal);
-    }
-
-    function drawTitularChart(dp) {
-      const chartDiv = document.getElementById('chart_titular');
-      if (!chartDiv) return;
-
-      try {
-        const isDark = document.body.classList.contains('dark-mode');
-        const textColor = isDark ? '#F9FAFB' : '#64748B';
-
-        const dataArray = [['Titular', 'Valor']];
-        Object.entries(dp).forEach(([titular, valor]) => {
-          if (valor > 0) {
-            dataArray.push([titular, valor]);
-          }
-        });
-
-        if (dataArray.length <= 1) {
-          chartDiv.innerHTML = '<div class="text-center mt-5 text-muted small">Sem dados para exibir</div>';
-          return;
-        }
-
-        const data = google.visualization.arrayToDataTable(dataArray);
-        const options = {
-          pieHole: 0.45,
-          colors: ['#4361ee', '#2ec4b6', '#ff9f1c'],
-          chartArea: { width: '60%', height: '85%', left: '20%', top: '7.5%' },
-          legend: {
-            position: 'left',
-            alignment: 'center',
-            textStyle: { color: textColor, fontSize: 11 }
-          },
-          backgroundColor: 'transparent',
-          pieSliceText: 'percentage',
-          pieSliceTextStyle: { color: 'white', fontSize: 12, bold: true },
-          tooltip: { text: 'both', showColorCode: true, trigger: 'focus', isHtml: true }
-        };
-
-        const chart = new google.visualization.PieChart(chartDiv);
-        chart.draw(data, options);
-      } catch (e) {
-        console.log('Erro ao desenhar gráfico de titular:', e);
-      }
-    }
-
-    function drawStatusChart(pago, aberto) {
-      const chartDiv = document.getElementById('chart_status');
-      if (!chartDiv) return;
-
-      try {
-        const total = pago + aberto;
-
-        if (total === 0) {
-          chartDiv.innerHTML = '<div class="text-center mt-5 text-muted small">Sem dados</div>';
-          return;
-        }
-
-        const isDark = document.body.classList.contains('dark-mode');
-        const textColor = isDark ? '#F9FAFB' : '#64748B';
-
-        const data = google.visualization.arrayToDataTable([
-          ['Status', 'Valor'],
-          ['Pago', pago],
-          ['Em Aberto', aberto]
-        ]);
-
-        const options = {
-          pieHole: 0.6,
-          colors: ['#2ec4b6', '#ff9f1c'],
-          chartArea: { width: '85%', height: '85%' },
-          legend: 'none',
-          backgroundColor: 'transparent',
-          pieSliceText: 'none',
-          tooltip: { text: 'both', showColorCode: true, trigger: 'focus', isHtml: true }
-        };
-
-        const percent = Math.round((pago / total) * 100);
-        const percentEl = document.getElementById('status-percent');
-        if (percentEl) {
-          percentEl.innerText = percent + '%';
-        }
-
-        const chart = new google.visualization.PieChart(chartDiv);
-        chart.draw(data, options);
-      } catch (e) {
-        console.log('Erro ao desenhar gráfico de status:', e);
-      }
     }
 
     function gerarProjecao() {
@@ -2874,8 +2762,6 @@
     }
 
     function renderizarRadarFinanceiro() {
-      if (!dGeral) return;
-
       const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
 
       let tRec = 0;
@@ -2905,16 +2791,9 @@
         score = Math.max(0, Math.min(100, (1 - proporcao) * 100));
       }
 
-      const scoreEl = document.getElementById('radar-health-score');
-      const barEl = document.getElementById('radar-health-bar');
-      if (scoreEl) scoreEl.innerText = Math.round(score) + "%";
-      if (barEl) {
-        barEl.style.width = score + "%";
-        barEl.className = 'progress-bar ' + (score > 70 ? 'bg-success' : score > 40 ? 'bg-primary' : 'bg-danger');
-      }
-
-      const savingsPotential = despEstiloVida * 0.2;
-      document.getElementById('radar-savings-potential').innerText = formatarMoeda(savingsPotential);
+      document.getElementById('radar-health-score').innerText = Math.round(score) + "%";
+      document.getElementById('radar-health-bar').style.width = score + "%";
+      document.getElementById('radar-savings-potential').innerText = formatarMoeda(despEstiloVida * 0.2);
 
       let limitUsage = 0;
       if (tRec > 0) {
@@ -2922,174 +2801,34 @@
       }
       document.getElementById('radar-spending-limit').innerText = Math.round(limitUsage) + "%";
 
-      const insightsList = document.getElementById('radar-insights-list');
-      if (insightsList) {
-        insightsList.innerHTML = "";
-        const insights = [];
-
-        if (score < 50) {
-          insights.push({ icon: 'fa-triangle-exclamation', color: 'text-danger', title: 'Atenção ao Saldo', text: 'Suas despesas estão muito próximas ou acima da sua receita. Considere revisar gastos imediatos.' });
-        } else if (score > 80) {
-          insights.push({ icon: 'fa-star', color: 'text-success', title: 'Excelente Gestão', text: 'Você está mantendo uma ótima margem de segurança este mês.' });
-        }
-
-        if (despEstiloVida > despEssencial) {
-          insights.push({ icon: 'fa-couch', color: 'text-warning', title: 'Gastos de Estilo de Vida', text: 'Gastos com lazer e extras superaram os essenciais. Há oportunidade de economia.' });
-        }
-
-        if (totalDesp > tRec * 0.9) {
-          insights.push({ icon: 'fa-piggy-bank', color: 'text-info', title: 'Reserva de Emergência', text: 'Separe ao menos 10% da sua receita antes do mês começar.' });
-        }
-
-        if (insights.length === 0) {
-          insights.push({ icon: 'fa-check', color: 'text-primary', title: 'Tudo em Ordem', text: 'Continue acompanhando seus registros.' });
-        }
-
-        insights.forEach(ins => {
-          insightsList.innerHTML += `
-            <div class="d-flex align-items-start gap-3 p-3 rounded bg-light border-start border-4 ${ins.color.replace('text', 'border')}">
-              <i class="fa-solid ${ins.icon} ${ins.color} mt-1" style="font-size: 1.2rem;"></i>
-              <div>
-                <div class="fw-bold">${ins.title}</div>
-                <div class="small">${ins.text}</div>
-              </div>
-            </div>
-          `;
-        });
-      }
-
-      drawRadarChartDistribution(despEssencial, despEstiloVida);
-    }
-
-    function drawRadarChartDistribution(essencial, estilo) {
+      // Gráfico de distribuição
       const chartDiv = document.getElementById('chart_radar_distribution');
-      if (!chartDiv) return;
+      if (chartDiv) {
+        try {
+          const isDark = document.body.classList.contains('dark-mode');
+          const textColor = isDark ? '#F9FAFB' : '#64748B';
 
-      try {
-        const isDark = document.body.classList.contains('dark-mode');
-        const textColor = isDark ? '#F9FAFB' : '#64748B';
+          const data = google.visualization.arrayToDataTable([
+            ['Categoria', 'Valor'],
+            ['Essencial', despEssencial],
+            ['Lifestyle', despEstiloVida]
+          ]);
 
-        const data = google.visualization.arrayToDataTable([
-          ['Categoria', 'Valor'],
-          ['Essencial', essencial],
-          ['Lifestyle', estilo]
-        ]);
+          const options = {
+            pieHole: 0.6,
+            backgroundColor: 'transparent',
+            colors: ['#4361ee', '#ff9f1c'],
+            legend: { position: 'bottom', textStyle: { color: textColor, fontSize: 12 } },
+            chartArea: { width: '90%', height: '80%' },
+            pieSliceText: 'none',
+            tooltip: { textStyle: { fontSize: 13 } }
+          };
 
-        const options = {
-          pieHole: 0.6,
-          backgroundColor: 'transparent',
-          colors: ['#4361ee', '#ff9f1c'],
-          legend: { position: 'bottom', textStyle: { color: textColor, fontSize: 12 } },
-          chartArea: { width: '90%', height: '80%' },
-          pieSliceText: 'none',
-          tooltip: { textStyle: { fontSize: 13 } }
-        };
-
-        const chart = new google.visualization.PieChart(chartDiv);
-        chart.draw(data, options);
-      } catch (e) {
-        console.error("Erro ao desenhar gráfico Radar:", e);
-      }
-    }
-
-    // ==================== FUNÇÕES DE CONFIGURAÇÃO ====================
-    async function carregarConfigs() {
-      try {
-        const res = await callAppsScript('buscarConfigs');
-        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
-        renderizarConfigScreen();
-        atualizarSelectsDinamicos();
-      } catch (error) {
-        console.error('Erro ao carregar configurações:', error);
-      }
-    }
-
-    function renderizarConfigScreen() {
-      const listaT = document.getElementById('lista-titulares-config');
-      const listaC = document.getElementById('lista-cartoes-config');
-
-      if (!listaT || !listaC) return;
-
-      listaT.innerHTML = (configApp.titulares || []).map((t, index) => `
-        <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('titulares', ${index + 2}, this)">
-          ${t}
-          <button class="btn-remove-config" onclick="deleteConfig('titulares', '${t}')">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        </li>
-      `).join('');
-
-      listaC.innerHTML = (configApp.cartoes || []).map(c => {
-        const valorUnico = `${c.nome}|${c.titular}`;
-        return `
-          <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('cartoes', ${c.linha}, this)">
-            <div>
-              <strong>${c.nome || ''}</strong> 
-              <small class="text-muted">(${c.titular || ''})</small>
-              <span class="dia-vencimento-badge">Dia ${c.diaVencimento || '10'}</span>
-            </div>
-            <button class="btn-remove-config" onclick="deleteConfig('cartoes', '${valorUnico}')">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </li>
-        `;
-      }).join('');
-
-      const listaCat = document.getElementById('lista-categorias-config');
-      if (listaCat) {
-        listaCat.innerHTML = (configApp.categorias || []).map(cat => `
-          <li class="list-group-item d-flex justify-content-between align-items-center" ondblclick="iniciarEdicaoConfig('categorias', ${cat.linha}, this)">
-            <div style="flex:1">
-              <strong>${cat.label}</strong>
-              <div class="text-muted small">${cat.keywords || 'Sem palavras-chave'}</div>
-            </div>
-            <button class="btn-remove-config" onclick="deleteConfig('categorias', ${cat.linha})">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </li>
-        `).join('');
-      }
-
-      const selectTitu = document.getElementById('novo-cartao-titu');
-      if (selectTitu) {
-        selectTitu.innerHTML = (configApp.titulares || []).map(t =>
-          `<option value="${t}">${t}</option>`
-        ).join('');
-      }
-    }
-
-    function atualizarSelectsDinamicos() {
-      const htmlTitulares = (configApp.titulares || []).map(t => `<option value="${t}">${t}</option>`).join('');
-      document.querySelectorAll('.dynamic-titulares').forEach(sel => {
-        if (sel) sel.innerHTML = htmlTitulares;
-      });
-
-      const selCat = document.getElementById('cat-geral');
-      if (selCat) {
-        selCat.innerHTML = '<option value="">Sem Categoria</option>' + (configApp.categorias || []).map(c =>
-          `<option value="${c.label}">${c.label}</option>`
-        ).join('');
-      }
-
-      const selCartao = document.getElementById('cartao-c');
-      if (selCartao) {
-        selCartao.innerHTML = (configApp.cartoes || []).map(c =>
-          `<option value="${c.nome || ''}|${c.titular || ''}|${c.diaVencimento || '10'}">${c.nome || ''}</option>`
-        ).join('');
-      }
-    }
-
-    function toggleSettingsList(id, buttonId) {
-      const content = document.getElementById(id);
-      const btn = document.getElementById(buttonId);
-      if (content.classList.contains('hidden-content')) {
-        content.classList.remove('hidden-content');
-        btn.classList.remove('fa-eye');
-        btn.classList.add('fa-eye-slash');
-      } else {
-        content.classList.add('hidden-content');
-        btn.classList.remove('fa-eye-slash');
-        btn.classList.add('fa-eye');
+          const chart = new google.visualization.PieChart(chartDiv);
+          chart.draw(data, options);
+        } catch (e) {
+          console.error("Erro ao desenhar gráfico Radar:", e);
+        }
       }
     }
 
@@ -3129,57 +2868,6 @@
       renderizarTabelaEAnalise();
     }
 
-    // ==================== FUNÇÕES DE EDIÇÃO INLINE ====================
-    function iniciarEdicaoCartao(linha) {
-      const item = (dCartoes || []).find(x => x.linha === linha);
-      if (!item) return;
-
-      editingRow = { linha: linha, tipo: 'cartao', item: item };
-      renderizarTabelaEAnalise();
-
-      setTimeout(() => {
-        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
-        if (primeiroCampo) primeiroCampo.focus();
-      }, 100);
-    }
-
-    function iniciarEdicaoGeral(linha) {
-      const item = (dGeral || []).find(x => x.linha === linha);
-      if (!item) return;
-
-      if (["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(item.descricao)) {
-        showToast('Itens consolidados não podem ser editados diretamente', 'warning');
-        return;
-      }
-
-      editingRow = { linha: linha, tipo: 'geral', item: item };
-      renderizarTabelaEAnalise();
-
-      setTimeout(() => {
-        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
-        if (primeiroCampo) primeiroCampo.focus();
-      }, 100);
-    }
-
-    function iniciarEdicaoReceita(linha) {
-      const item = (dReceitas || []).find(x => x.linha === linha);
-      if (!item) return;
-
-      editingRow = { linha: linha, tipo: 'receita', item: item };
-      renderizarTabelaEAnalise();
-
-      setTimeout(() => {
-        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
-        if (primeiroCampo) primeiroCampo.focus();
-      }, 100);
-    }
-
-    function cancelarEdicao() {
-      editingRow = null;
-      renderizarTabelaEAnalise();
-    }
-
-    // ==================== FUNÇÕES DE SALVAMENTO ====================
     async function salvar() {
       const linhaEdit = document.getElementById('linha-edit').value;
       const descricao = document.getElementById('desc').value;
@@ -3313,136 +3001,6 @@
       }
     }
 
-    async function salvarEdicaoInlineCartao(linha) {
-      const cartaoSelect = document.getElementById(`edit-cartao-${linha}`);
-      const descInput = document.getElementById(`edit-desc-${linha}`);
-      const catInput = document.getElementById(`edit-cat-${linha}`);
-      const valInput = document.getElementById(`edit-val-${linha}`);
-
-      if (!cartaoSelect || !descInput || !catInput || !valInput) return;
-
-      const cartaoInfo = cartaoSelect.value.split('|');
-      const nomeCartao = cartaoInfo[0];
-      const titularCartao = cartaoInfo[1];
-      const diaVencimento = cartaoInfo[2] || '10';
-      const descricao = descInput.value.trim();
-      const categoria = catInput.value.trim();
-      const valor = valInput.value;
-
-      if (!descricao || !valor) {
-        showToast('Preencha todos os campos!', 'warning');
-        return;
-      }
-
-      const mesAtual = ("0" + currentMonth).slice(-2);
-      const anoAtual = currentYear;
-      const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
-
-      const dados = {
-        linha: linha,
-        cartao: nomeCartao,
-        titular: titularCartao,
-        descricao: descricao,
-        categoria: categoria,
-        valor: valor,
-        vencimento: vencimento
-      };
-
-      showLoading();
-      try {
-        await callAppsScript('editarCartao', dados);
-        showToast('Cartão editado com sucesso!', 'success');
-        editingRow = null;
-        await carregar();
-      } catch (error) {
-        showToast('Erro ao editar: ' + error.message, 'danger');
-      } finally {
-        hideLoading();
-      }
-    }
-
-    async function salvarEdicaoInlineGeral(linha) {
-      const descInput = document.getElementById(`edit-desc-${linha}`);
-      const valInput = document.getElementById(`edit-val-${linha}`);
-      const tituSelect = document.getElementById(`edit-titu-${linha}`);
-      const catSelect = document.getElementById(`edit-cat-${linha}`);
-      const vencInput = document.getElementById(`edit-venc-${linha}`);
-
-      if (!descInput || !valInput || !tituSelect || !catSelect || !vencInput) return;
-
-      const descricao = descInput.value.trim();
-      const valor = valInput.value;
-      const titular = tituSelect.value;
-      const categoria = catSelect.value;
-      const vencimento = vencInput.value;
-
-      if (!descricao || !valor || !titular || !vencimento) {
-        showToast('Preencha todos os campos!', 'warning');
-        return;
-      }
-
-      const dados = {
-        linha: linha,
-        descricao: descricao,
-        categoria: categoria,
-        valor: valor,
-        titular: titular,
-        vencimento: vencimento
-      };
-
-      showLoading();
-      try {
-        await callAppsScript('editarDespesa', dados);
-        showToast('Item editado com sucesso!', 'success');
-        editingRow = null;
-        await carregar();
-      } catch (error) {
-        showToast('Erro ao editar: ' + error.message, 'danger');
-      } finally {
-        hideLoading();
-      }
-    }
-
-    async function salvarEdicaoInlineReceita(linha) {
-      const descInput = document.getElementById(`edit-desc-${linha}`);
-      const valInput = document.getElementById(`edit-val-${linha}`);
-      const tituSelect = document.getElementById(`edit-titu-${linha}`);
-
-      if (!descInput || !valInput || !tituSelect) return;
-
-      const descricao = descInput.value.trim();
-      const valor = valInput.value;
-      const titular = tituSelect.value;
-
-      if (!descricao || !valor || !titular) {
-        showToast('Preencha todos os campos!', 'warning');
-        return;
-      }
-
-      const recebimento = editingRow.item.recebimentoIso;
-
-      const dados = {
-        linha: linha,
-        descricao: descricao,
-        valor: valor,
-        titular: titular,
-        recebimento: recebimento
-      };
-
-      showLoading();
-      try {
-        await callAppsScript('editarReceita', dados);
-        showToast('Receita editada com sucesso!', 'success');
-        editingRow = null;
-        await carregar();
-      } catch (error) {
-        showToast('Erro ao editar: ' + error.message, 'danger');
-      } finally {
-        hideLoading();
-      }
-    }
-
-    // ==================== FUNÇÕES DE AÇÕES ====================
     async function atualizarFaturaAtual() {
       const competencia = ("0" + currentMonth).slice(-2) + "/" + currentYear;
 
@@ -3451,7 +3009,7 @@
         async function () {
           showLoading();
           try {
-            const res = await callAppsScript('atualizarFaturaCompetencia', { competencia });
+            await callAppsScript('atualizarFaturaCompetencia', { competencia });
             showToast(`Faturas atualizadas!`, 'success');
             await carregar();
           } catch (error) {
@@ -3570,296 +3128,67 @@
     }
 
     // ==================== CONFIGURAÇÕES ====================
-    async function deleteConfig(tipo, valor) {
-      let mensagem;
-      if (tipo === 'titulares') {
-        mensagem = `Deseja realmente remover o titular "${valor}"?`;
-      } else if (tipo === 'cartoes') {
-        const partes = valor.split('|');
-        mensagem = `Deseja realmente remover o cartão "${partes[0]}" (${partes[1]})?`;
-      } else if (tipo === 'categorias') {
-        const cat = (configApp.categorias || []).find(c => c.linha === valor);
-        mensagem = `Deseja realmente remover a categoria "${cat ? cat.label : valor}"?`;
-      }
-
-      showActionModal(mensagem, async function () {
-        showLoading();
-        try {
-          const res = await callAppsScript('removerConfigItem', { tipo, valor });
-          configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
-          renderizarConfigScreen();
-          atualizarSelectsDinamicos();
-          showToast("Removido com sucesso!", "success");
-        } catch (error) {
-          showToast('Erro: ' + error.message, 'danger');
-        } finally {
-          hideLoading();
-        }
-      }, 'delete');
-    }
-
-    async function addConfig(tipo, idInput) {
-      let valor;
-      if (Array.isArray(idInput)) {
-        valor = idInput.map(id => document.getElementById(id).value);
-        if (!valor[0] || !valor[1]) return showToast("Preencha os campos obrigatórios", "warning");
-        if (tipo === 'cartoes' && (!valor[2] || valor[2] === '')) {
-          valor[2] = "10";
-        }
-      } else {
-        valor = document.getElementById(idInput).value;
-        if (!valor) return showToast("Preencha o campo", "warning");
-      }
-
-      showLoading();
+    async function carregarConfigs() {
       try {
-        const res = await callAppsScript('salvarConfigItem', { tipo, valor });
+        const res = await callAppsScript('buscarConfigs');
         configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
         renderizarConfigScreen();
         atualizarSelectsDinamicos();
-        showToast("Configuração salva!");
-
-        if (Array.isArray(idInput)) {
-          idInput.forEach(id => document.getElementById(id).value = "");
-        } else {
-          document.getElementById(idInput).value = "";
-        }
       } catch (error) {
-        showToast('Erro: ' + error.message, 'danger');
-      } finally {
-        hideLoading();
+        console.error('Erro ao carregar configurações:', error);
       }
     }
 
-    function iniciarEdicaoConfig(tipo, linha, elemento) {
-      if (tipo === 'titulares') {
-        const titular = configApp.titulares[linha - 2];
-        elemento.innerHTML = `<input type="text" class="form-control form-control-sm" value="${titular}" onkeydown="if(event.key==='Enter') salvarEdicaoConfig('${tipo}', ${linha}, this.value); if(event.key==='Escape') renderizarConfigScreen()">`;
-      } else if (tipo === 'cartoes') {
-        const cartao = (configApp.cartoes || []).find(c => c.linha === linha);
-        elemento.innerHTML = `
-          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
-            <input type="text" class="form-control form-control-sm" value="${cartao.nome}" placeholder="Nome" onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
-            <select class="form-select form-select-sm">
-              ${(configApp.titulares || []).map(t => `<option value="${t}" ${t === cartao.titular ? 'selected' : ''}>${t}</option>`).join('')}
-            </select>
-            <input type="number" class="form-control form-control-sm" value="${cartao.diaVencimento}" placeholder="Dia Venc." onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
-            <div class="d-flex gap-1 mt-1">
-              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCartao(${linha}, this.parentElement.parentElement)">✔</button>
-              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
+    function renderizarConfigScreen() {
+      const listaT = document.getElementById('lista-titulares-config');
+      const listaC = document.getElementById('lista-cartoes-config');
+
+      if (!listaT || !listaC) return;
+
+      listaT.innerHTML = (configApp.titulares || []).map((t, index) => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          ${t}
+          <button class="btn-remove-config" onclick="deleteConfig('titulares', '${t}')">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </li>
+      `).join('');
+
+      listaC.innerHTML = (configApp.cartoes || []).map(c => {
+        const valorUnico = `${c.nome}|${c.titular}`;
+        return `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>${c.nome || ''}</strong> 
+              <small class="text-muted">(${c.titular || ''})</small>
+              <span class="dia-vencimento-badge">Dia ${c.diaVencimento || '10'}</span>
             </div>
-          </div>
+            <button class="btn-remove-config" onclick="deleteConfig('cartoes', '${valorUnico}')">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </li>
         `;
-      } else if (tipo === 'categorias') {
-        const cat = (configApp.categorias || []).find(c => c.linha === linha);
-        elemento.innerHTML = `
-          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
-            <input type="text" class="form-control form-control-sm" value="${cat.label}" placeholder="Categoria" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
-            <input type="text" class="form-control form-control-sm" value="${cat.keywords}" placeholder="Palavras-chave" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
-            <div class="d-flex gap-1 mt-1">
-              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCategoria(${linha}, this.parentElement.parentElement)">✔</button>
-              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
+      }).join('');
+
+      const listaCat = document.getElementById('lista-categorias-config');
+      if (listaCat) {
+        listaCat.innerHTML = (configApp.categorias || []).map(cat => `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div style="flex:1">
+              <strong>${cat.label}</strong>
+              <div class="text-muted small">${cat.keywords || 'Sem palavras-chave'}</div>
             </div>
-          </div>
-        `;
-      }
-      const input = elemento.querySelector('input');
-      if (input) input.focus();
-    }
-
-    function confirmarEdicaoCartao(linha, container) {
-      const inputs = container.querySelectorAll('input, select');
-      const dados = [inputs[0].value, inputs[1].value, inputs[2].value];
-      salvarEdicaoConfig('cartoes', linha, dados);
-    }
-
-    function confirmarEdicaoCategoria(linha, container) {
-      const inputs = container.querySelectorAll('input');
-      const dados = [inputs[0].value, inputs[1].value];
-      salvarEdicaoConfig('categorias', linha, dados);
-    }
-
-    async function salvarEdicaoConfig(tipo, linha, valor) {
-      showLoading();
-      try {
-        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor });
-        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
-        renderizarConfigScreen();
-        atualizarSelectsDinamicos();
-        showToast("Alterado com sucesso!");
-      } catch (error) {
-        showToast("Erro: " + error.message, "danger");
-      } finally {
-        hideLoading();
+            <button class="btn-remove-config" onclick="deleteConfig('categorias', ${cat.linha})">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </li>
+        `).join('');
       }
     }
 
-    // ==================== TEMA ====================
-    function toggleTheme() {
-      document.body.classList.toggle('dark-mode');
-      const isDark = document.body.classList.contains('dark-mode');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      updateThemeIcon(isDark);
-
-      if (typeof renderizarTabelaEAnalise === 'function') {
-        renderizarTabelaEAnalise();
-      }
+    function atualizarSelectsDinamicos() {
+      const htmlTitulares = (configApp.titulares || []).map(t => `<option value="${t}">${t</t>`
     }
-
-    function updateThemeIcon(isDark) {
-      const icon = document.querySelector('#theme-toggle i');
-      if (icon) {
-        icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-      }
-    }
-
-    function applyInitialTheme() {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        updateThemeIcon(true);
-      } else {
-        updateThemeIcon(false);
-      }
-    }
-
-    // ==================== INICIALIZAÇÃO ====================
-    document.addEventListener('keydown', function (e) {
-      if (!editingRow) return;
-
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (editingRow.tipo === 'cartao') {
-          salvarEdicaoInlineCartao(editingRow.linha);
-        } else if (editingRow.tipo === 'geral') {
-          salvarEdicaoInlineGeral(editingRow.linha);
-        } else if (editingRow.tipo === 'receita') {
-          salvarEdicaoInlineReceita(editingRow.linha);
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cancelarEdicao();
-      }
-    });
-
-    window.onload = function () {
-      const today = new Date().toISOString().split('T')[0];
-
-      const vencDia = document.getElementById('venc-dia');
-      if (vencDia) vencDia.value = "15";
-
-      const recDia = document.getElementById('rec-dia');
-      if (recDia) recDia.value = "5";
-
-      const fDesc = document.getElementById('f-desc');
-      if (fDesc) fDesc.value = localStorage.getItem('f-desc') || "";
-
-      const savedAba = localStorage.getItem('abaAtiva') || 'dashboard';
-      if (savedAba === 'novo') localStorage.setItem('abaAtiva', 'dashboard');
-      nav(localStorage.getItem('abaAtiva') || 'dashboard');
-      updateDateDisplay();
-
-      if (!document.querySelector('.toast-container')) {
-        const container = document.createElement('div');
-        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-        document.body.appendChild(container);
-      }
-
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          const container = document.getElementById('container-formularios');
-          if (container && container.style.display !== 'none') {
-            fecharForms();
-          }
-        }
-      });
-
-      const confirmBtn = document.getElementById('confirmDeleteBtn');
-      if (confirmBtn) {
-        confirmBtn.onclick = () => {
-          if (confirmDeleteCallback) confirmDeleteCallback();
-          const modalEl = document.getElementById('confirmModal');
-          const modalInstance = bootstrap.Modal.getInstance(modalEl);
-          if (modalInstance) modalInstance.hide();
-        };
-      }
-
-      // Auto-save para as notas
-      const notesArea = document.getElementById('dashboard-notes');
-      if (notesArea) {
-        let timeout;
-        notesArea.addEventListener('input', () => {
-          clearTimeout(timeout);
-          timeout = setTimeout(async () => {
-            const status = document.getElementById('notes-status');
-            if (status) {
-              status.innerText = "Salvando...";
-              status.classList.add('visible');
-            }
-            try {
-              await callAppsScript('salvarNotaDashboard', { nota: notesArea.value });
-              if (status) {
-                status.innerText = "Salvo!";
-                setTimeout(() => status.classList.remove('visible'), 2000);
-              }
-            } catch (error) {
-              if (status) {
-                status.innerText = "Erro!";
-              }
-            }
-          }, 1000);
-        });
-      }
-
-      applyInitialTheme();
-      
-      // Carregar dados
-      setTimeout(() => {
-        carregar();
-        carregarConfigs();
-      }, 500);
-    };
-
-    // Expor funções globais necessárias
-    window.nav = nav;
-    window.changeMonth = changeMonth;
-    window.abrirModalPeriodo = abrirModalPeriodo;
-    window.mudarAnoModal = mudarAnoModal;
-    window.selecionarMesModal = selecionarMesModal;
-    window.toggleTheme = toggleTheme;
-    window.carregar = carregar;
-    window.mostrarFormContextual = mostrarFormContextual;
-    window.fecharForms = fecharForms;
-    window.fecharFormFora = fecharFormFora;
-    window.salvar = salvar;
-    window.salvarReceita = salvarReceita;
-    window.salvarCartao = salvarCartao;
-    window.atualizarFaturaAtual = atualizarFaturaAtual;
-    window.pagar = pagar;
-    window.reverter = reverter;
-    window.excluirDesp = excluirDesp;
-    window.excluirRec = excluirRec;
-    window.excluirCartao = excluirCartao;
-    window.mudarAba = mudarAba;
-    window.filtrarCartaoRapido = filtrarCartaoRapido;
-    window.filtrarTitularRapido = filtrarTitularRapido;
-    window.limparFiltrosManuais = limparFiltrosManuais;
-    window.iniciarEdicaoCartao = iniciarEdicaoCartao;
-    window.iniciarEdicaoGeral = iniciarEdicaoGeral;
-    window.iniciarEdicaoReceita = iniciarEdicaoReceita;
-    window.cancelarEdicao = cancelarEdicao;
-    window.salvarEdicaoInlineCartao = salvarEdicaoInlineCartao;
-    window.salvarEdicaoInlineGeral = salvarEdicaoInlineGeral;
-    window.salvarEdicaoInlineReceita = salvarEdicaoInlineReceita;
-    window.sugerirCategoria = sugerirCategoria;
-    window.toggleSettingsList = toggleSettingsList;
-    window.deleteConfig = deleteConfig;
-    window.addConfig = addConfig;
-    window.iniciarEdicaoConfig = iniciarEdicaoConfig;
-    window.confirmarEdicaoCartao = confirmarEdicaoCartao;
-    window.confirmarEdicaoCategoria = confirmarEdicaoCategoria;
-    window.renderizarConfigScreen = renderizarConfigScreen;
   </script>
 </body>
-
 </html>
