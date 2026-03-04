@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 
+/* porno de anao
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2142,41 +2144,41 @@
         try {
           const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
           const script = document.createElement('script');
-          
+
           const params = new URLSearchParams({
             acao: acao,
             dados: JSON.stringify(dados),
             callback: callbackName
           });
-          
-          window[callbackName] = function(response) {
+
+          window[callbackName] = function (response) {
             delete window[callbackName];
             if (script.parentNode) document.body.removeChild(script);
             clearTimeout(timeout);
-            
+
             if (response && response.error) {
               reject(new Error(response.error));
             } else {
               resolve(response || {});
             }
           };
-          
+
           const timeout = setTimeout(() => {
             delete window[callbackName];
             if (script.parentNode) document.body.removeChild(script);
             reject(new Error('Timeout ao chamar a API'));
           }, 30000);
-          
+
           script.src = API_URL + '?' + params.toString();
-          script.onerror = function() {
+          script.onerror = function () {
             clearTimeout(timeout);
             delete window[callbackName];
             if (script.parentNode) document.body.removeChild(script);
             reject(new Error('Erro ao carregar o script da API'));
           };
-          
+
           document.body.appendChild(script);
-          
+
         } catch (error) {
           reject(error);
         }
@@ -2416,15 +2418,15 @@
     async function carregar() {
       showLoading();
       try {
-        const data = await callAppsScript('carregarDadosIniciais', { 
-          mes: currentMonth, 
-          ano: currentYear 
+        const data = await callAppsScript('carregarDadosIniciais', {
+          mes: currentMonth,
+          ano: currentYear
         });
-        
+
         dReceitas = data.receitas || [];
         dGeral = data.geral || [];
         dCartoes = data.cartoes || [];
-        
+
         const notesArea = document.getElementById('dashboard-notes');
         if (notesArea) notesArea.value = data.notaDashboard || "";
 
@@ -2465,14 +2467,14 @@
       if (!extratoBody) return;
 
       extratoBody.innerHTML = "";
-      
+
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       const hojeIso = hoje.toISOString().split('T')[0];
 
       // Pegar TODAS as despesas (sem filtrar por mês)
       let todasDespesas = [...(dGeral || [])];
-      
+
       // Ordenar por data (mais recentes primeiro)
       todasDespesas.sort((a, b) => {
         const dateA = a.vencimentoIso || '2000-01-01';
@@ -2607,7 +2609,7 @@
         const el = document.getElementById(cardMap[nome]);
         if (el) el.innerText = cardConf ? cardConf.titular : '';
       });
-      
+
       setV('total-titu-noadia', tTitu["Noádia"]);
       setV('total-titu-pablo', tTitu["Pablo"]);
       setV('total-titu-casa', tTitu["Casa"]);
@@ -2658,8 +2660,8 @@
             <td>${formatarMoeda(i.valor)}</td>
             <td>
               ${i.status === 'Em aberto' ?
-                `<button class="btn-action" style="color:var(--gray)" onclick="pagar(${i.linha}); event.stopPropagation();" title="Pagar">⟲</button>` :
-                `<button class="btn-action" style="color:var(--success)" onclick="reverter(${i.linha}); event.stopPropagation();" title="Reverter">✔</button>`}
+              `<button class="btn-action" style="color:var(--gray)" onclick="pagar(${i.linha}); event.stopPropagation();" title="Pagar">⟲</button>` :
+              `<button class="btn-action" style="color:var(--success)" onclick="reverter(${i.linha}); event.stopPropagation();" title="Reverter">✔</button>`}
               <button class="btn-action" style="color:var(--danger)" onclick="excluirDesp(${i.linha}); event.stopPropagation();" title="Excluir">✕</button>
             </td>
           </tr>`;
@@ -3380,7 +3382,7 @@
       }
 
       applyInitialTheme();
-      
+
       // Carregar dados
       setTimeout(() => {
         carregar();
@@ -3420,5 +3422,5 @@
     window.atualizarSelectsDinamicos = atualizarSelectsDinamicos;
   </script>
 </body>
-</html>
 
+</html>
