@@ -1421,12 +1421,10 @@
         white-space: nowrap !important;
       }
 
-      /* Limitador de descrição com ellipsis */
-      .col-descricao-texto {
-        max-width: 150px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      /* Customização do Checkbox de Pagamento */
+      .form-check-input:checked {
+        background-color: #2ec4b6 !important;
+        border-color: #2ec4b6 !important;
       }
     }
 
@@ -1669,7 +1667,7 @@
           <div class="col-lg-5">
             <div class="projecao-container" style="margin-top: 0;">
               <h5 class="fw-bold mb-3">📋 Extrato Detalhado</h5>
-              <div id="extrato-dashboard-container" style="overflow-y: auto; max-height: 600px;">
+              <div id="extrato-dashboard-container" style="overflow-y: auto; max-height: 800px;">
                 <table class="table table-hover">
                   <thead>
                     <tr>
@@ -2038,7 +2036,7 @@
               onclick="limparFiltrosManuais()">Limpar</button>
             <input type="hidden" id="f-mes"><input type="hidden" id="f-ano"><input type="hidden" id="f-titu">
           </div>
-          <div id="extrato-geral-container" style="overflow-x:auto; overflow-y:auto; max-height: 500px;">
+          <div id="extrato-geral-container" style="overflow-x:auto; overflow-y:auto; max-height: 800px;">
             <table id="tabela-principal">
               <thead id="cabecalhoTabela"></thead>
               <tbody id="corpoTabela"></tbody>
