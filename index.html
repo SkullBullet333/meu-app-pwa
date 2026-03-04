@@ -1422,6 +1422,9 @@
       }
 
       /* Otimização de Tabela Mobile - Aba Geral */
+      .aba-geral th:nth-child(1),
+      .aba-geral td:nth-child(1),
+      /* Status original */
       .aba-geral th:nth-child(2),
       .aba-geral td:nth-child(2),
       /* Titular */
@@ -1432,13 +1435,23 @@
       .aba-geral td:nth-child(5),
       /* Vencimento */
       .aba-geral th:nth-child(6),
-      .aba-geral td:nth-child(6),
-      /* Parcela */
-      .aba-geral th:nth-child(7),
-      .aba-geral td:nth-child(7)
+      .aba-geral td:nth-child(6)
 
-      /* Valor */
+      /* Parcela */
         {
+        display: none !important;
+      }
+
+      /* Estilo para Descrição no Mobile */
+      .aba-geral td:nth-child(3) {
+        max-width: 140px !important;
+        text-overflow: ellipsis !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+      }
+
+      /* Ações no Mobile: Ocultar botão de lixeira */
+      .aba-geral td:nth-child(8) .btn-action {
         display: none !important;
       }
 
@@ -1448,7 +1461,7 @@
         max-height: 80vh !important;
       }
 
-      /* Customização do Checkbox de Pagamento */
+      /* Customização do Checkbox de Pagamento (Global) */
       .form-check-input:checked {
         background-color: #2ec4b6 !important;
         border-color: #2ec4b6 !important;
@@ -1457,10 +1470,16 @@
 
     @media (min-width: 769px) {
 
+      /* Customização do Checkbox de Pagamento (PC) */
+      .form-check-input:checked {
+        background-color: #2ec4b6 !important;
+        border-color: #2ec4b6 !important;
+      }
+
       /* Altura das tabelas no PC */
       #extrato-dashboard-container,
       #extrato-geral-container {
-        max-height: 600px !important;
+        max-height: 601px !important;
       }
 
       .topbar {
