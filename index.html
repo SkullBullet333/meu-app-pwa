@@ -3187,8 +3187,808 @@
     }
 
     function atualizarSelectsDinamicos() {
-      const htmlTitulares = (configApp.titulares || []).map(t => `<option value="${t}">${t</t>`
+      const htmlTitulares = (configApp.titulares || []).map(t => `<option value="${t}">${t}</option>`).join('');
+      document.querySelectorAll('.dynamic-titulares').forEach(sel => {
+        if (sel) sel.innerHTML = htmlTitulares;
+      });
+
+      const selCat = document.getElementById('cat-geral');
+      if (selCat) {
+        selCat.innerHTML = '<option value="">Sem Categoria</option>' + (configApp.categorias || []).map(c =>
+          `<option value="${c.label}">${c.label}</option>`
+        ).join('');
+      }
+
+      const selCartao = document.getElementById('cartao-c');
+      if (selCartao) {
+        selCartao.innerHTML = (configApp.cartoes || []).map(c =>
+          `<option value="${c.nome || ''}|${c.titular || ''}|${c.diaVencimento || '10'}">${c.nome || ''}</option>`
+        ).join('');
+      }
     }
+
+    function toggleSettingsList(id, buttonId) {
+      const content = document.getElementById(id);
+      const btn = document.getElementById(buttonId);
+      if (content.classList.contains('hidden-content')) {
+        content.classList.remove('hidden-content');
+        btn.classList.remove('fa-eye');
+        btn.classList.add('fa-eye-slash');
+      } else {
+        content.classList.add('hidden-content');
+        btn.classList.remove('fa-eye-slash');
+        btn.classList.add('fa-eye');
+      }
+    }
+
+    // ==================== FUNÇÕES CRUD ====================
+    function mudarAba(aba) {
+      abaAtiva = aba;
+      filtroCardManual = "";
+      filtroTitularManual = "";
+      editingRow = null;
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const abaBtn = document.getElementById('tab-' + aba);
+      if (abaBtn) abaBtn.classList.add('active');
+
+      const contTitular = document.getElementById('container-cards-titular');
+      const contCartao = document.getElementById('container-cards-cartao');
+
+      if (contTitular) contTitular.style.display = (aba === 'geral') ? 'flex' : 'none';
+      if (contCartao) contCartao.style.display = (aba === 'cartoes') ? 'flex' : 'none';
+
+      renderizarTabelaEAnalise();
+    }
+
+    function filtrarCartaoRapido(nome) {
+      filtroCardManual = nome;
+      renderizarTabelaEAnalise();
+    }
+
+    function filtrarTitularRapido(nome) {
+      filtroTitularManual = nome;
+      renderizarTabelaEAnalise();
+    }
+
+    function limparFiltrosManuais() {
+      filtroCardManual = "";
+      filtroTitularManual = "";
+      renderizarTabelaEAnalise();
+    }
+
+    // ==================== FUNÇÕES DE EDIÇÃO INLINE ====================
+    function iniciarEdicaoCartao(linha) {
+      const item = (dCartoes || []).find(x => x.linha === linha);
+      if (!item) return;
+
+      editingRow = { linha: linha, tipo: 'cartao', item: item };
+      renderizarTabelaEAnalise();
+
+      setTimeout(() => {
+        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 100);
+    }
+
+    function iniciarEdicaoGeral(linha) {
+      const item = (dGeral || []).find(x => x.linha === linha);
+      if (!item) return;
+
+      if (["Sicoob Clássico", "Sicoob Platinum", "Nubank", "Inter", "Mercado Pago"].includes(item.descricao)) {
+        showToast('Itens consolidados não podem ser editados diretamente', 'warning');
+        return;
+      }
+
+      editingRow = { linha: linha, tipo: 'geral', item: item };
+      renderizarTabelaEAnalise();
+
+      setTimeout(() => {
+        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 100);
+    }
+
+    function iniciarEdicaoReceita(linha) {
+      const item = (dReceitas || []).find(x => x.linha === linha);
+      if (!item) return;
+
+      editingRow = { linha: linha, tipo: 'receita', item: item };
+      renderizarTabelaEAnalise();
+
+      setTimeout(() => {
+        const primeiroCampo = document.getElementById(`edit-desc-${linha}`);
+        if (primeiroCampo) primeiroCampo.focus();
+      }, 100);
+    }
+
+    function cancelarEdicao() {
+      editingRow = null;
+      renderizarTabelaEAnalise();
+    }
+
+    // ==================== FUNÇÕES DE SALVAMENTO ====================
+    async function salvar() {
+      const linhaEdit = document.getElementById('linha-edit').value;
+      const descricao = document.getElementById('desc').value;
+      const valor = document.getElementById('val').value;
+      const categoria = document.getElementById('cat-geral').value;
+      const titular = document.getElementById('titu').value;
+      const dia = document.getElementById('venc-dia').value || '15';
+
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const vencimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
+
+      if (!descricao || !valor || !titular) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const dados = {
+        linha: linhaEdit,
+        descricao: descricao,
+        categoria: categoria,
+        valor: valor,
+        totalParcelas: document.getElementById('parc').value,
+        vencimento: vencimento,
+        titular: titular
+      };
+
+      showLoading();
+      try {
+        if (linhaEdit) {
+          await callAppsScript('editarDespesa', dados);
+        } else {
+          await callAppsScript('salvarDespesa', dados);
+        }
+        showToast('Despesa salva com sucesso!', 'success');
+        fecharForms();
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao salvar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function salvarReceita() {
+      const linhaEdit = document.getElementById('linha-edit-r').value;
+      const descricao = document.getElementById('desc-r').value;
+      const valor = document.getElementById('val-r').value;
+      const titular = document.getElementById('titu-r').value;
+      const dia = document.getElementById('rec-dia').value || '5';
+
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const recebimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
+
+      if (!descricao || !valor || !titular) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const dados = {
+        linha: linhaEdit,
+        descricao: descricao,
+        valor: valor,
+        totalParcelas: document.getElementById('parc-r').value,
+        recebimento: recebimento,
+        titular: titular
+      };
+
+      showLoading();
+      try {
+        if (linhaEdit) {
+          await callAppsScript('editarReceita', dados);
+        } else {
+          await callAppsScript('salvarReceita', dados);
+        }
+        showToast('Receita salva com sucesso!', 'success');
+        fecharForms();
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao salvar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function salvarCartao() {
+      const linhaEdit = document.getElementById('linha-edit-c').value;
+      const cartaoInfo = document.getElementById('cartao-c').value.split('|');
+      const descricao = document.getElementById('desc-c').value;
+      const valor = document.getElementById('val-c').value;
+
+      const nomeCartao = cartaoInfo[0];
+      const titularCartao = cartaoInfo[1];
+      const diaVencimento = cartaoInfo[2] || '10';
+
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
+
+      if (!descricao || !valor || cartaoInfo.length < 2) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const dados = {
+        linha: linhaEdit,
+        cartao: nomeCartao,
+        titular: titularCartao,
+        descricao: descricao,
+        categoria: document.getElementById('cat-c').value.trim(),
+        valor: valor,
+        totalParcelas: document.getElementById('parc-c').value,
+        vencimento: vencimento
+      };
+
+      showLoading();
+      try {
+        if (linhaEdit) {
+          await callAppsScript('editarCartao', dados);
+        } else {
+          await callAppsScript('lancarParcelas', dados);
+        }
+        showToast('Cartão lançado com sucesso!', 'success');
+        fecharForms();
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao salvar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function salvarEdicaoInlineCartao(linha) {
+      const cartaoSelect = document.getElementById(`edit-cartao-${linha}`);
+      const descInput = document.getElementById(`edit-desc-${linha}`);
+      const catInput = document.getElementById(`edit-cat-${linha}`);
+      const valInput = document.getElementById(`edit-val-${linha}`);
+
+      if (!cartaoSelect || !descInput || !catInput || !valInput) return;
+
+      const cartaoInfo = cartaoSelect.value.split('|');
+      const nomeCartao = cartaoInfo[0];
+      const titularCartao = cartaoInfo[1];
+      const diaVencimento = cartaoInfo[2] || '10';
+      const descricao = descInput.value.trim();
+      const categoria = catInput.value.trim();
+      const valor = valInput.value;
+
+      if (!descricao || !valor) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
+
+      const dados = {
+        linha: linha,
+        cartao: nomeCartao,
+        titular: titularCartao,
+        descricao: descricao,
+        categoria: categoria,
+        valor: valor,
+        vencimento: vencimento
+      };
+
+      showLoading();
+      try {
+        await callAppsScript('editarCartao', dados);
+        showToast('Cartão editado com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function salvarEdicaoInlineGeral(linha) {
+      const descInput = document.getElementById(`edit-desc-${linha}`);
+      const valInput = document.getElementById(`edit-val-${linha}`);
+      const tituSelect = document.getElementById(`edit-titu-${linha}`);
+      const catSelect = document.getElementById(`edit-cat-${linha}`);
+      const vencInput = document.getElementById(`edit-venc-${linha}`);
+
+      if (!descInput || !valInput || !tituSelect || !catSelect || !vencInput) return;
+
+      const descricao = descInput.value.trim();
+      const valor = valInput.value;
+      const titular = tituSelect.value;
+      const categoria = catSelect.value;
+      const vencimento = vencInput.value;
+
+      if (!descricao || !valor || !titular || !vencimento) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const dados = {
+        linha: linha,
+        descricao: descricao,
+        categoria: categoria,
+        valor: valor,
+        titular: titular,
+        vencimento: vencimento
+      };
+
+      showLoading();
+      try {
+        await callAppsScript('editarDespesa', dados);
+        showToast('Item editado com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function salvarEdicaoInlineReceita(linha) {
+      const descInput = document.getElementById(`edit-desc-${linha}`);
+      const valInput = document.getElementById(`edit-val-${linha}`);
+      const tituSelect = document.getElementById(`edit-titu-${linha}`);
+
+      if (!descInput || !valInput || !tituSelect) return;
+
+      const descricao = descInput.value.trim();
+      const valor = valInput.value;
+      const titular = tituSelect.value;
+
+      if (!descricao || !valor || !titular) {
+        showToast('Preencha todos os campos!', 'warning');
+        return;
+      }
+
+      const recebimento = editingRow.item.recebimentoIso;
+
+      const dados = {
+        linha: linha,
+        descricao: descricao,
+        valor: valor,
+        titular: titular,
+        recebimento: recebimento
+      };
+
+      showLoading();
+      try {
+        await callAppsScript('editarReceita', dados);
+        showToast('Receita editada com sucesso!', 'success');
+        editingRow = null;
+        await carregar();
+      } catch (error) {
+        showToast('Erro ao editar: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ==================== FUNÇÕES DE AÇÕES ====================
+    async function atualizarFaturaAtual() {
+      const competencia = ("0" + currentMonth).slice(-2) + "/" + currentYear;
+
+      showActionModal(
+        `Deseja atualizar as faturas para a competência ${competencia}?`,
+        async function () {
+          showLoading();
+          try {
+            const res = await callAppsScript('atualizarFaturaCompetencia', { competencia });
+            showToast(`Faturas atualizadas!`, 'success');
+            await carregar();
+          } catch (error) {
+            showToast('Erro ao atualizar: ' + error.message, 'danger');
+          } finally {
+            hideLoading();
+          }
+        },
+        'payment'
+      );
+    }
+
+    async function pagar(l) {
+      const item = (dGeral || []).find(x => x.linha === l);
+      if (!item) return;
+
+      showActionModal(`Deseja marcar "${item.descricao}" como pago?`, async function () {
+        showLoading();
+        try {
+          await callAppsScript('marcarComoPago', { linha: l });
+          showToast('Item marcado como pago!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
+      }, 'payment');
+    }
+
+    async function reverter(l) {
+      const item = (dGeral || []).find(x => x.linha === l);
+      if (!item) return;
+
+      showActionModal(`Deseja reverter "${item.descricao}" para "Em aberto"?`, async function () {
+        showLoading();
+        try {
+          await callAppsScript('reverterPagamento', { linha: l });
+          showToast('Item revertido para em aberto!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
+      }, 'revert');
+    }
+
+    async function excluirDesp(l) {
+      const item = (dGeral || []).find(x => x.linha === l);
+      if (!item) return;
+
+      showActionModal(`Deseja realmente excluir "${item.descricao}"?`, async function () {
+        showLoading();
+        try {
+          await callAppsScript('excluirDespesa', { linha: l });
+          showToast('Item excluído com sucesso!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro ao excluir: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
+      }, 'delete');
+    }
+
+    async function excluirRec(l) {
+      const item = (dReceitas || []).find(x => x.linha === l);
+      if (!item) return;
+
+      showActionModal(`Deseja realmente excluir a receita "${item.descricao}"?`, async function () {
+        showLoading();
+        try {
+          await callAppsScript('excluirReceita', { linha: l });
+          showToast('Receita excluída com sucesso!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro ao excluir: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
+      }, 'delete');
+    }
+
+    async function excluirCartao(l) {
+      const item = (dCartoes || []).find(x => x.linha === l);
+      if (!item) return;
+
+      showActionModal(`Deseja realmente excluir "${item.descricao}" do cartão ${item.cartao}?`, async function () {
+        showLoading();
+        try {
+          await callAppsScript('excluirGastoCartao', { linha: l });
+          showToast('Gasto excluído com sucesso!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro ao excluir: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
+      }, 'delete');
+    }
+
+    function sugerirCategoria(desc) {
+      const d = (desc || '').toLowerCase();
+      const catInput = document.getElementById('cat-c');
+      if (!configApp.categorias) return;
+
+      for (const cat of configApp.categorias) {
+        const keywords = (cat.keywords || '').split(',').map(k => k.trim().toLowerCase());
+        if (keywords.some(k => k && d.includes(k))) {
+          catInput.value = cat.label;
+          return;
+        }
+      }
+      catInput.value = '';
+    }
+
+    // ==================== CONFIGURAÇÕES ====================
+    async function deleteConfig(tipo, valor) {
+      let mensagem;
+      if (tipo === 'titulares') {
+        mensagem = `Deseja realmente remover o titular "${valor}"?`;
+      } else if (tipo === 'cartoes') {
+        const partes = valor.split('|');
+        mensagem = `Deseja realmente remover o cartão "${partes[0]}" (${partes[1]})?`;
+      } else if (tipo === 'categorias') {
+        const cat = (configApp.categorias || []).find(c => c.linha === valor);
+        mensagem = `Deseja realmente remover a categoria "${cat ? cat.label : valor}"?`;
+      }
+
+      showActionModal(mensagem, async function () {
+        showLoading();
+        try {
+          const res = await callAppsScript('removerConfigItem', { tipo, valor });
+          configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
+          renderizarConfigScreen();
+          atualizarSelectsDinamicos();
+          showToast("Removido com sucesso!", "success");
+        } catch (error) {
+          showToast('Erro: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
+      }, 'delete');
+    }
+
+    async function addConfig(tipo, idInput) {
+      let valor;
+      if (Array.isArray(idInput)) {
+        valor = idInput.map(id => document.getElementById(id).value);
+        if (!valor[0] || !valor[1]) return showToast("Preencha os campos obrigatórios", "warning");
+        if (tipo === 'cartoes' && (!valor[2] || valor[2] === '')) {
+          valor[2] = "10";
+        }
+      } else {
+        valor = document.getElementById(idInput).value;
+        if (!valor) return showToast("Preencha o campo", "warning");
+      }
+
+      showLoading();
+      try {
+        const res = await callAppsScript('salvarConfigItem', { tipo, valor });
+        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+        showToast("Configuração salva!");
+
+        if (Array.isArray(idInput)) {
+          idInput.forEach(id => document.getElementById(id).value = "");
+        } else {
+          document.getElementById(idInput).value = "";
+        }
+      } catch (error) {
+        showToast('Erro: ' + error.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function iniciarEdicaoConfig(tipo, linha, elemento) {
+      if (tipo === 'titulares') {
+        const titular = configApp.titulares[linha - 2];
+        elemento.innerHTML = `<input type="text" class="form-control form-control-sm" value="${titular}" onkeydown="if(event.key==='Enter') salvarEdicaoConfig('${tipo}', ${linha}, this.value); if(event.key==='Escape') renderizarConfigScreen()">`;
+      } else if (tipo === 'cartoes') {
+        const cartao = (configApp.cartoes || []).find(c => c.linha === linha);
+        elemento.innerHTML = `
+          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
+            <input type="text" class="form-control form-control-sm" value="${cartao.nome}" placeholder="Nome" onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
+            <select class="form-select form-select-sm">
+              ${(configApp.titulares || []).map(t => `<option value="${t}" ${t === cartao.titular ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+            <input type="number" class="form-control form-control-sm" value="${cartao.diaVencimento}" placeholder="Dia Venc." onkeydown="if(event.key==='Enter') confirmarEdicaoCartao(${linha}, this.parentElement)">
+            <div class="d-flex gap-1 mt-1">
+              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCartao(${linha}, this.parentElement.parentElement)">✔</button>
+              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
+            </div>
+          </div>
+        `;
+      } else if (tipo === 'categorias') {
+        const cat = (configApp.categorias || []).find(c => c.linha === linha);
+        elemento.innerHTML = `
+          <div class="d-flex gap-1 flex-column w-100" onkeydown="if(event.key==='Escape') renderizarConfigScreen()">
+            <input type="text" class="form-control form-control-sm" value="${cat.label}" placeholder="Categoria" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
+            <input type="text" class="form-control form-control-sm" value="${cat.keywords}" placeholder="Palavras-chave" onkeydown="if(event.key==='Enter') confirmarEdicaoCategoria(${linha}, this.parentElement)">
+            <div class="d-flex gap-1 mt-1">
+              <button class="btn btn-xs btn-success py-0 px-1" onclick="confirmarEdicaoCategoria(${linha}, this.parentElement.parentElement)">✔</button>
+              <button class="btn btn-xs btn-danger py-0 px-1" onclick="renderizarConfigScreen()">✕</button>
+            </div>
+          </div>
+        `;
+      }
+      const input = elemento.querySelector('input');
+      if (input) input.focus();
+    }
+
+    function confirmarEdicaoCartao(linha, container) {
+      const inputs = container.querySelectorAll('input, select');
+      const dados = [inputs[0].value, inputs[1].value, inputs[2].value];
+      salvarEdicaoConfig('cartoes', linha, dados);
+    }
+
+    function confirmarEdicaoCategoria(linha, container) {
+      const inputs = container.querySelectorAll('input');
+      const dados = [inputs[0].value, inputs[1].value];
+      salvarEdicaoConfig('categorias', linha, dados);
+    }
+
+    async function salvarEdicaoConfig(tipo, linha, valor) {
+      showLoading();
+      try {
+        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor });
+        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+        showToast("Alterado com sucesso!");
+      } catch (error) {
+        showToast("Erro: " + error.message, "danger");
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ==================== TEMA ====================
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      updateThemeIcon(isDark);
+
+      if (typeof renderizarTabelaEAnalise === 'function') {
+        renderizarTabelaEAnalise();
+      }
+    }
+
+    function updateThemeIcon(isDark) {
+      const icon = document.querySelector('#theme-toggle i');
+      if (icon) {
+        icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      }
+    }
+
+    function applyInitialTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        updateThemeIcon(true);
+      } else {
+        updateThemeIcon(false);
+      }
+    }
+
+    // ==================== INICIALIZAÇÃO ====================
+    document.addEventListener('keydown', function (e) {
+      if (!editingRow) return;
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (editingRow.tipo === 'cartao') {
+          salvarEdicaoInlineCartao(editingRow.linha);
+        } else if (editingRow.tipo === 'geral') {
+          salvarEdicaoInlineGeral(editingRow.linha);
+        } else if (editingRow.tipo === 'receita') {
+          salvarEdicaoInlineReceita(editingRow.linha);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelarEdicao();
+      }
+    });
+
+    window.onload = function () {
+      const today = new Date().toISOString().split('T')[0];
+
+      const vencDia = document.getElementById('venc-dia');
+      if (vencDia) vencDia.value = "15";
+
+      const recDia = document.getElementById('rec-dia');
+      if (recDia) recDia.value = "5";
+
+      const fDesc = document.getElementById('f-desc');
+      if (fDesc) fDesc.value = localStorage.getItem('f-desc') || "";
+
+      const savedAba = localStorage.getItem('abaAtiva') || 'dashboard';
+      if (savedAba === 'novo') localStorage.setItem('abaAtiva', 'dashboard');
+      nav(localStorage.getItem('abaAtiva') || 'dashboard');
+      updateDateDisplay();
+
+      if (!document.querySelector('.toast-container')) {
+        const container = document.createElement('div');
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const container = document.getElementById('container-formularios');
+          if (container && container.style.display !== 'none') {
+            fecharForms();
+          }
+        }
+      });
+
+      const confirmBtn = document.getElementById('confirmDeleteBtn');
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          if (confirmDeleteCallback) confirmDeleteCallback();
+          const modalEl = document.getElementById('confirmModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalEl);
+          if (modalInstance) modalInstance.hide();
+        };
+      }
+
+      // Auto-save para as notas
+      const notesArea = document.getElementById('dashboard-notes');
+      if (notesArea) {
+        let timeout;
+        notesArea.addEventListener('input', () => {
+          clearTimeout(timeout);
+          timeout = setTimeout(async () => {
+            const status = document.getElementById('notes-status');
+            if (status) {
+              status.innerText = "Salvando...";
+              status.classList.add('visible');
+            }
+            try {
+              await callAppsScript('salvarNotaDashboard', { nota: notesArea.value });
+              if (status) {
+                status.innerText = "Salvo!";
+                setTimeout(() => status.classList.remove('visible'), 2000);
+              }
+            } catch (error) {
+              if (status) {
+                status.innerText = "Erro!";
+              }
+            }
+          }, 1000);
+        });
+      }
+
+      applyInitialTheme();
+      
+      // Carregar dados
+      setTimeout(() => {
+        carregar();
+        carregarConfigs();
+      }, 500);
+    };
+
+    // Expor funções globais necessárias
+    window.nav = nav;
+    window.changeMonth = changeMonth;
+    window.abrirModalPeriodo = abrirModalPeriodo;
+    window.mudarAnoModal = mudarAnoModal;
+    window.selecionarMesModal = selecionarMesModal;
+    window.toggleTheme = toggleTheme;
+    window.carregar = carregar;
+    window.mostrarFormContextual = mostrarFormContextual;
+    window.fecharForms = fecharForms;
+    window.fecharFormFora = fecharFormFora;
+    window.salvar = salvar;
+    window.salvarReceita = salvarReceita;
+    window.salvarCartao = salvarCartao;
+    window.atualizarFaturaAtual = atualizarFaturaAtual;
+    window.pagar = pagar;
+    window.reverter = reverter;
+    window.excluirDesp = excluirDesp;
+    window.excluirRec = excluirRec;
+    window.excluirCartao = excluirCartao;
+    window.mudarAba = mudarAba;
+    window.filtrarCartaoRapido = filtrarCartaoRapido;
+    window.filtrarTitularRapido = filtrarTitularRapido;
+    window.limparFiltrosManuais = limparFiltrosManuais;
+    window.iniciarEdicaoCartao = iniciarEdicaoCartao;
+    window.iniciarEdicaoGeral = iniciarEdicaoGeral;
+    window.iniciarEdicaoReceita = iniciarEdicaoReceita;
+    window.cancelarEdicao = cancelarEdicao;
+    window.salvarEdicaoInlineCartao = salvarEdicaoInlineCartao;
+    window.salvarEdicaoInlineGeral = salvarEdicaoInlineGeral;
+    window.salvarEdicaoInlineReceita = salvarEdicaoInlineReceita;
+    window.sugerirCategoria = sugerirCategoria;
+    window.toggleSettingsList = toggleSettingsList;
+    window.deleteConfig = deleteConfig;
+    window.addConfig = addConfig;
+    window.iniciarEdicaoConfig = iniciarEdicaoConfig;
+    window.confirmarEdicaoCartao = confirmarEdicaoCartao;
+    window.confirmarEdicaoCategoria = confirmarEdicaoCategoria;
+    window.renderizarConfigScreen = renderizarConfigScreen;
   </script>
 </body>
+
 </html>
+
