@@ -2638,7 +2638,22 @@
       }
       else if (abaAtiva === 'geral') {
         thead.innerHTML = `<tr><th>Status</th><th>Titular</th><th>Descrição</th><th>Categoria</th><th>Venc.</th><th>Parc.</th><th>Valor</th><th>Ações</th></tr>`;
-        (dGeral || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
+
+        // Ordenação: 1º Em aberto por data, 2º Pagos por data
+        const dadosOrdenados = (dGeral || [])
+          .filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual))
+          .sort((a, b) => {
+            // Itens 'Pago' vão para o final
+            if (a.status === 'Pago' && b.status !== 'Pago') return 1;
+            if (a.status !== 'Pago' && b.status === 'Pago') return -1;
+
+            // Dentro do mesmo status, ordena por data (vencimentoIso)
+            const dataA = a.vencimentoIso || '';
+            const dataB = b.vencimentoIso || '';
+            return dataA.localeCompare(dataB);
+          });
+
+        dadosOrdenados.forEach(i => {
           let statusClass = i.status === 'Pago' ? 'status-pago' : 'status-aberto';
           let labelStatus = i.status || '';
 
