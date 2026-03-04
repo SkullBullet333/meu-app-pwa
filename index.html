@@ -1702,9 +1702,13 @@
                       <label class="small fw-bold text-muted mb-1">DESCRIÇÃO</label>
                       <input id="desc" class="form-control" placeholder="O que você comprou?">
                     </div>
-                    <div class="col-span-12">
+                    <div class="col-span-6">
                       <label class="small fw-bold text-muted mb-1">CATEGORIA</label>
                       <select id="cat-geral" class="form-select"></select>
+                    </div>
+                    <div class="col-span-6">
+                      <label class="small fw-bold text-muted mb-1">TITULAR</label>
+                      <select id="titu" class="form-select dynamic-titulares"></select>
                     </div>
                     <div class="col-span-4 col-mobile-6">
                       <label class="small fw-bold text-muted mb-1">VALOR (R$)</label>
@@ -1718,10 +1722,6 @@
                       <label class="small fw-bold text-muted mb-1">DIA VENC.</label>
                       <input id="venc-dia" class="form-control" type="number" placeholder="Dia" min="1" max="31"
                         value="15">
-                    </div>
-                    <div class="col-span-3 col-mobile-6">
-                      <label class="small fw-bold text-muted mb-1">TITULAR</label>
-                      <select id="titu" class="form-select dynamic-titulares"></select>
                     </div>
                     <div class="col-span-12 mt-3 text-end">
                       <button id="btn-g" class="btn btn-primary px-5 py-2 fw-bold" onclick="salvar()">
@@ -1789,13 +1789,13 @@
                       <input id="desc-c" class="form-control" placeholder="Estabelecimento / Item"
                         oninput="sugerirCategoria(this.value)">
                     </div>
-                    <div class="col-span-12">
+                    <div class="col-span-6">
                       <label class="small fw-bold text-muted mb-1">CATEGORIA</label>
                       <input id="cat-c" class="form-control" placeholder="Auto..." readonly
                         style="background: var(--bg); cursor: default;">
                     </div>
-                    <div class="col-span-12">
-                      <label class="small fw-bold text-muted mb-1">SELECIONE O CARTÃO</label>
+                    <div class="col-span-6">
+                      <label class="small fw-bold text-muted mb-1">CARTÃO</label>
                       <select id="cartao-c" class="form-select"></select>
                     </div>
                     <div class="col-span-8 col-mobile-6">
