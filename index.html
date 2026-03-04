@@ -2514,7 +2514,7 @@
         if (i.status === 'Em aberto' && i.vencimentoIso < hojeIso) {
           statusClass = 'status-vencida';
           labelStatus = 'Vencida';
-          subtitle = `Vencido no dia ${i.vencimento}`;
+          subtitle = `Venceu em ${i.vencimento}`;
         } else if (i.status === 'Em aberto' && i.vencimentoIso === hojeIso) {
           statusClass = 'status-hoje';
           labelStatus = 'Hoje';
