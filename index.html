@@ -1386,6 +1386,8 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
+        width: 100%;
+        margin: 0;
       }
 
       .kpi-card h3 {
@@ -1400,6 +1402,39 @@
       .table td,
       .table th {
         white-space: nowrap !important;
+      }
+
+      /* Limitador de descrição com ellipsis */
+      .col-descricao-texto {
+        max-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    /* Restauração Desktop */
+    @media (min-width: 769px) {
+      .topbar {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0 !important;
+      }
+
+      .topbar-mobile-row-1 {
+        width: auto !important;
+      }
+
+      .topbar-mobile-row-2 {
+        width: auto !important;
+      }
+
+      #page-title {
+        font-size: calc(1.3rem + .6vw) !important;
+      }
+
+      .tab-btn {
+        font-size: 0.9rem !important;
       }
     }
 
@@ -2591,8 +2626,8 @@
                 <div class="icon-circle">
                   <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
                 </div>
-                <div>
-                  <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''}</div>
+                <div class="col-descricao-texto">
+                  <div class="fw-bold" style="font-size:0.85rem" title="${i.descricao || ''}">${i.descricao || ''}</div>
                   <div class="text-muted" style="font-size:0.7rem; opacity: 1;">${subtitle}</div>
                 </div>
               </div>
