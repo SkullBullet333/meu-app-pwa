@@ -1700,7 +1700,8 @@
                     <input type="hidden" id="linha-edit">
                     <div class="col-span-12">
                       <label class="small fw-bold text-muted mb-1">DESCRIÇÃO</label>
-                      <input id="desc" class="form-control" placeholder="O que você comprou?">
+                      <input id="desc" class="form-control" placeholder="O que você comprou?"
+                        oninput="sugerirCategoria(this.value, 'cat-geral')">
                     </div>
                     <div class="col-span-6">
                       <label class="small fw-bold text-muted mb-1">CATEGORIA</label>
@@ -1787,12 +1788,11 @@
                     <div class="col-span-12">
                       <label class="small fw-bold text-muted mb-1">DESCRIÇÃO</label>
                       <input id="desc-c" class="form-control" placeholder="Estabelecimento / Item"
-                        oninput="sugerirCategoria(this.value)">
+                        oninput="sugerirCategoria(this.value, 'cat-c')">
                     </div>
                     <div class="col-span-6">
                       <label class="small fw-bold text-muted mb-1">CATEGORIA</label>
-                      <input id="cat-c" class="form-control" placeholder="Auto..." readonly
-                        style="background: var(--bg); cursor: default;">
+                      <select id="cat-c" class="form-select"></select>
                     </div>
                     <div class="col-span-6">
                       <label class="small fw-bold text-muted mb-1">CARTÃO</label>
@@ -3325,10 +3325,10 @@
       }, 'delete');
     }
 
-    function sugerirCategoria(desc) {
+    function sugerirCategoria(desc, targetId) {
       const d = (desc || '').toLowerCase();
-      const catInput = document.getElementById('cat-c');
-      if (!configApp.categorias) return;
+      const catInput = document.getElementById(targetId);
+      if (!configApp.categorias || !catInput) return;
 
       for (const cat of configApp.categorias) {
         const keywords = (cat.keywords || '').split(',').map(k => k.trim().toLowerCase());
@@ -3337,7 +3337,6 @@
           return;
         }
       }
-      catInput.value = '';
     }
 
     // ==================== CONFIGURAÇÕES ====================
@@ -3406,11 +3405,13 @@
       });
 
       const selCat = document.getElementById('cat-geral');
-      if (selCat) {
-        selCat.innerHTML = '<option value="">Sem Categoria</option>' + (configApp.categorias || []).map(c =>
-          `<option value="${c.label}">${c.label}</option>`
-        ).join('');
-      }
+      const selCatC = document.getElementById('cat-c');
+      const optionsCat = '<option value="">Sem Categoria</option>' + (configApp.categorias || []).map(c =>
+        `<option value="${c.label}">${c.label}</option>`
+      ).join('');
+
+      if (selCat) selCat.innerHTML = optionsCat;
+      if (selCatC) selCatC.innerHTML = optionsCat;
 
       const selCartao = document.getElementById('cartao-c');
       if (selCartao) {
