@@ -2508,14 +2508,14 @@
         let labelStatus = i.status || '';
         const dia = i.vencimento ? i.vencimento.split('/')[0] : '';
 
-        if (i.status === 'Em aberto') {
-          if (i.vencimentoIso < hojeIso) {
-            statusClass = 'status-vencida';
-            labelStatus = 'Vencida';
-          } else if (i.vencimentoIso === hojeIso) {
-            statusClass = 'status-hoje';
-            labelStatus = 'Hoje';
-          }
+        let subtitle = `Dia ${dia}`;
+        if (i.status === 'Em aberto' && i.vencimentoIso < hojeIso) {
+          statusClass = 'status-vencida';
+          labelStatus = 'Vencida';
+          subtitle = `Vencido no dia ${i.vencimento}`;
+        } else if (i.status === 'Em aberto' && i.vencimentoIso === hojeIso) {
+          statusClass = 'status-hoje';
+          labelStatus = 'Hoje';
         }
 
         extratoBody.innerHTML += `
@@ -2526,7 +2526,8 @@
                   <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
                 </div>
                 <div>
-                  <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''} • Dia ${dia}</div>
+                  <div class="fw-bold" style="font-size:0.85rem">${i.descricao || ''}</div>
+                  <div class="text-muted" style="font-size:0.75rem; opacity: 0.8;">${subtitle}</div>
                 </div>
               </div>
             </td>
