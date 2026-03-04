@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR">f
 
 <head>
   <meta charset="UTF-8">
@@ -2112,6 +2112,33 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    // Função de teste para verificar a API
+    async function testarAPIConnection() {
+      console.log("Testando conexão com API...");
+      try {
+        // Teste via GET
+        const response = await fetch(API_URL);
+        const text = await response.text();
+        console.log("Resposta GET:", text);
+        
+        // Teste via POST
+        const postResponse = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acao: 'carregarDadosIniciais', dados: { mes: 1, ano: 2024 } })
+        });
+        const postText = await postResponse.text();
+        console.log("Resposta POST:", postText);
+        
+      } catch (error) {
+        console.error("Erro no teste:", error);
+      }
+    }
+    
+    // Execute o teste
+    setTimeout(testarAPIConnection, 2000);  
+
+    
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(() => console.log("Service Worker registrado"));
