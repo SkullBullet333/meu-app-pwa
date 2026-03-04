@@ -2131,59 +2131,29 @@
 
     // URL da API do Google Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycby9IwfWuP5U95sn2m5MHOuc8y2slnFoj36v_MVbfr8RYwPyUNELoNfpfc9UbcE26_li/exec";
-
-    // Função auxiliar para chamar a API via JSONP
+    const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
+    
+    // Função com proxy
     async function callAppsScript(acao, dados = {}) {
-      return new Promise((resolve, reject) => {
-        try {
-          // Criar um callback único
-          const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-          
-          // Criar um elemento script para fazer a requisição JSONP
-          const script = document.createElement('script');
-          
-          // Construir a URL com os parâmetros
-          const params = new URLSearchParams({
-            acao: acao,
-            dados: JSON.stringify(dados),
-            callback: callbackName
-          });
-          
-          // Definir a função de callback globalmente
-          window[callbackName] = function(response) {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            
-            if (response.error) {
-              reject(new Error(response.error));
-            } else {
-              resolve(response);
-            }
-          };
-          
-          // Tratar erros de timeout
-          const timeout = setTimeout(() => {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            reject(new Error('Timeout ao chamar a API'));
-          }, 30000);
-          
-          // Configurar o script
-          script.src = API_URL + '?' + params.toString();
-          script.onerror = function() {
-            clearTimeout(timeout);
-            delete window[callbackName];
-            document.body.removeChild(script);
-            reject(new Error('Erro ao carregar o script da API'));
-          };
-          
-          // Adicionar o script ao documento
-          document.body.appendChild(script);
-          
-        } catch (error) {
-          reject(error);
-        }
-      });
+      try {
+        // Usar proxy para contornar CORS
+        const response = await fetch(PROXY_URL + API_URL, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({ acao, dados })
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        return data;
+      } catch (error) {
+        console.error('Erro na chamada API:', error);
+        throw error;
+      }
     }
     }
 
