@@ -1925,6 +1925,17 @@
 
         <div id="container-cards-titular" style="display:none;" class="row-5">
           <div class="col-5-custom">
+            <div class="card p-3 shadow-sm" style="border-left: 5px solid var(--danger);">
+              <div class="d-flex align-items-center justify-content-start gap-2">
+                <img src="https://i.ibb.co/YTy7S0TK/imagem-2026-03-04-170901626.png" class="img-c">
+                <div>
+                  <small class="text-muted d-block">Contas Vencidas</small>
+                  <strong id="total-vencidas-global" class="text-danger">R$ 0</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-5-custom">
             <div class="card p-3 card-click shadow-sm card-segmento-filtro" onclick="filtrarTitularRapido('Noádia')">
               <div class="d-flex align-items-center justify-content-start gap-2"><img
                   src="https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png"
@@ -2704,15 +2715,24 @@
         "Sicoob Clássico": 0
       };
 
-      // Calcular totais para cards (APENAS MÊS ATUAL)
+      let tVencGlobal = 0;
       (dGeral || []).forEach(i => {
+        const v = Number(i.valor || 0);
+
+        // Cálculo do Card de Vencidas (GLOBAL - Independente do mês)
+        if (i.status === 'Em aberto' && i.vencimentoIso < hojeIso) {
+          tVencGlobal += v;
+        }
+
+        // Cálculos do mês atual
         if (i.competencia === compSelecionada) {
-          const v = Number(i.valor || 0);
           i.status === "Pago" ? tPag += v : tAbe += v;
           if (pTit.hasOwnProperty(i.titular)) pTit[i.titular] += v;
           if (tTitu.hasOwnProperty(i.titular)) tTitu[i.titular] += v;
         }
       });
+
+      setV('total-vencidas-global', tVencGlobal);
 
       (dCartoes || []).forEach(i => {
         if (i.competencia === compSelecionada) {
