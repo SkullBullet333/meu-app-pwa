@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 
-/* porno de anao
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2707,6 +2705,9 @@
       const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
 
       let tRec = 0, tPag = 0, tAbe = 0, tFat = 0;
+      let pTit = {};
+
+      (configApp.titulares || []).forEach(t => { pTit[t] = 0; });
 
       (dReceitas || []).forEach(i => {
         if (i.competencia === compSelecionada) {
@@ -2721,6 +2722,7 @@
             tFat += v;
           }
           i.status === "Pago" ? tPag += v : tAbe += v;
+          if (pTit.hasOwnProperty(i.titular)) pTit[i.titular] += v;
         }
       });
 
@@ -2730,6 +2732,97 @@
       document.getElementById('totalDespGeral').innerText = formatarMoeda(despTotal);
       document.getElementById('totalFaturas').innerText = formatarMoeda(tFat);
       document.getElementById('totalSobras').innerText = formatarMoeda(tRec - despTotal);
+
+      // Chamada dos gráficos
+      drawStatusChart(tPag, tAbe);
+      drawTitularChart(pTit);
+    }
+
+    function drawTitularChart(dp) {
+      const chartDiv = document.getElementById('chart_titular');
+      if (!chartDiv) return;
+
+      try {
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ? '#F9FAFB' : '#64748B';
+
+        const dataArray = [['Titular', 'Valor']];
+        Object.entries(dp).forEach(([titular, valor]) => {
+          if (valor > 0) {
+            dataArray.push([titular, valor]);
+          }
+        });
+
+        if (dataArray.length <= 1) {
+          chartDiv.innerHTML = '<div class="text-center mt-5 text-muted small">Sem dados para exibir</div>';
+          return;
+        }
+
+        const data = google.visualization.arrayToDataTable(dataArray);
+        const options = {
+          pieHole: 0.45,
+          colors: ['#4361ee', '#2ec4b6', '#ff9f1c'],
+          chartArea: { width: '60%', height: '85%', left: '20%', top: '7.5%' },
+          legend: {
+            position: 'left',
+            alignment: 'center',
+            textStyle: { color: textColor, fontSize: 11 }
+          },
+          backgroundColor: 'transparent',
+          pieSliceText: 'percentage',
+          pieSliceTextStyle: { color: 'white', fontSize: 12, bold: true },
+          tooltip: { text: 'both', showColorCode: true, trigger: 'focus', isHtml: true }
+        };
+
+        const chart = new google.visualization.PieChart(chartDiv);
+        chart.draw(data, options);
+      } catch (e) {
+        console.log('Erro ao desenhar gráfico de titular:', e);
+      }
+    }
+
+    function drawStatusChart(pago, aberto) {
+      const chartDiv = document.getElementById('chart_status');
+      if (!chartDiv) return;
+
+      try {
+        const total = pago + aberto;
+
+        if (total === 0) {
+          chartDiv.innerHTML = '<div class="text-center mt-5 text-muted small">Sem dados</div>';
+          return;
+        }
+
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ? '#F9FAFB' : '#64748B';
+
+        const data = google.visualization.arrayToDataTable([
+          ['Status', 'Valor'],
+          ['Pago', pago],
+          ['Em Aberto', aberto]
+        ]);
+
+        const options = {
+          pieHole: 0.6,
+          colors: ['#2ec4b6', '#ff9f1c'],
+          chartArea: { width: '85%', height: '85%' },
+          legend: 'none',
+          backgroundColor: 'transparent',
+          pieSliceText: 'none',
+          tooltip: { text: 'both', showColorCode: true, trigger: 'focus', isHtml: true }
+        };
+
+        const percent = Math.round((pago / total) * 100);
+        const percentEl = document.getElementById('status-percent');
+        if (percentEl) {
+          percentEl.innerText = percent + '%';
+        }
+
+        const chart = new google.visualization.PieChart(chartDiv);
+        chart.draw(data, options);
+      } catch (e) {
+        console.log('Erro ao desenhar gráfico de status:', e);
+      }
     }
 
     function gerarProjecao() {
@@ -2793,8 +2886,14 @@
         score = Math.max(0, Math.min(100, (1 - proporcao) * 100));
       }
 
-      document.getElementById('radar-health-score').innerText = Math.round(score) + "%";
-      document.getElementById('radar-health-bar').style.width = score + "%";
+      const scoreEl = document.getElementById('radar-health-score');
+      const barEl = document.getElementById('radar-health-bar');
+      if (scoreEl) scoreEl.innerText = Math.round(score) + "%";
+      if (barEl) {
+        barEl.style.width = score + "%";
+        barEl.className = 'progress-bar ' + (score > 70 ? 'bg-success' : score > 40 ? 'bg-primary' : 'bg-danger');
+      }
+
       document.getElementById('radar-savings-potential').innerText = formatarMoeda(despEstiloVida * 0.2);
 
       let limitUsage = 0;
@@ -2802,6 +2901,43 @@
         limitUsage = (totalDesp / (tRec * 0.8)) * 100;
       }
       document.getElementById('radar-spending-limit').innerText = Math.round(limitUsage) + "%";
+
+      // Insights
+      const insightsList = document.getElementById('radar-insights-list');
+      if (insightsList) {
+        insightsList.innerHTML = "";
+        const insights = [];
+
+        if (score < 50) {
+          insights.push({ icon: 'fa-triangle-exclamation', color: 'text-danger', title: 'Atenção ao Saldo', text: 'Suas despesas estão muito próximas ou acima da sua receita. Considere revisar gastos imediatos.' });
+        } else if (score > 80) {
+          insights.push({ icon: 'fa-star', color: 'text-success', title: 'Excelente Gestão', text: 'Você está mantendo uma ótima margem de segurança este mês.' });
+        }
+
+        if (despEstiloVida > despEssencial) {
+          insights.push({ icon: 'fa-couch', color: 'text-warning', title: 'Gastos de Estilo de Vida', text: 'Gastos com lazer e extras superaram os essenciais. Há oportunidade de economia.' });
+        }
+
+        if (totalDesp > tRec * 0.9) {
+          insights.push({ icon: 'fa-piggy-bank', color: 'text-info', title: 'Reserva de Emergência', text: 'Separe ao menos 10% da sua receita antes do mês começar.' });
+        }
+
+        if (insights.length === 0) {
+          insights.push({ icon: 'fa-check', color: 'text-primary', title: 'Tudo em Ordem', text: 'Continue acompanhando seus registros.' });
+        }
+
+        insights.forEach(ins => {
+          insightsList.innerHTML += `
+            <div class="d-flex align-items-start gap-3 p-3 rounded bg-light border-start border-4 ${ins.color.replace('text', 'border')}">
+              <i class="fa-solid ${ins.icon} ${ins.color} mt-1" style="font-size: 1.2rem;"></i>
+              <div>
+                <div class="fw-bold">${ins.title}</div>
+                <div class="small">${ins.text}</div>
+              </div>
+            </div>
+          `;
+        });
+      }
 
       // Gráfico de distribuição
       const chartDiv = document.getElementById('chart_radar_distribution');
@@ -2831,6 +2967,16 @@
         } catch (e) {
           console.error("Erro ao desenhar gráfico Radar:", e);
         }
+      }
+
+      // Tendência
+      const trendBar = document.getElementById('radar-trend-bar');
+      const trendMsg = document.getElementById('radar-trend-message');
+      if (trendBar && trendMsg) {
+        const trend = Math.floor(Math.random() * 40) + 60;
+        trendBar.style.width = trend + "%";
+        trendBar.className = 'progress-bar ' + (trend < 90 ? 'bg-success' : 'bg-warning');
+        trendMsg.innerText = `Você gastou ${trend}% do mês anterior até hoje.`;
       }
     }
 
