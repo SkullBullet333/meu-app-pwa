@@ -2733,7 +2733,6 @@
         }
       });
 
-      setV('total-vencidas-global', tVencGlobal);
 
       (dCartoes || []).forEach(i => {
         if (i.competencia === compSelecionada) {
@@ -2749,6 +2748,8 @@
         const e = document.getElementById(id);
         if (e) e.innerText = formatarMoeda(v || 0);
       };
+
+      setV('total-vencidas-global', tVencGlobal);
 
       setV('total-nu', tCrd["Nubank"]);
       setV('total-mp', tCrd["Mercado Pago"]);
