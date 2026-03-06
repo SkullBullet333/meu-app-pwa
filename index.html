@@ -381,7 +381,7 @@
     }
 
     .kpi-card-green {
-      border-left: 4px solid #2ecc71;
+      border-left: 4px solid var(--success);
       border-top: 1px solid var(--border);
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
@@ -1721,9 +1721,9 @@
       <div id="view-dashboard" class="view active">
         <div class="row g-3 mb-4 kpi-grid-mobile">
           <div class="col-md-3 col-6">
-            <div class="kpi-card kpi-card-blue">
+            <div class="kpi-card kpi-card-green">
               <small>💰 RECEITAS</small>
-              <h3 id="totalRec" class="centered-value" style="color: var(--primary)">R$ 0,00</h3>
+              <h3 id="totalRec" class="centered-value" style="color: var(--success)">R$ 0,00</h3>
             </div>
           </div>
           <div class="col-md-3 col-6">
@@ -1733,15 +1733,15 @@
             </div>
           </div>
           <div class="col-md-3 col-6">
-            <div class="kpi-card kpi-card-green">
-              <small>📈 SOBRA</small>
-              <h3 id="totalSobras" class="centered-value" style="color: #2ecc71">R$ 0,00</h3>
+            <div id="card-margem" class="kpi-card kpi-card-green">
+              <small id="text-margem">📈 MARGEM</small>
+              <h3 id="totalSobras" class="centered-value" style="color: var(--success)">R$ 0,00</h3>
             </div>
           </div>
           <div class="col-md-3 col-6">
-            <div class="kpi-card kpi-card-purple">
+            <div class="kpi-card kpi-card-blue">
               <small>💳 FATURAS</small>
-              <h3 id="totalFaturas" class="centered-value" style="color: var(--faturas)">R$ 0,00</h3>
+              <h3 id="totalFaturas" class="centered-value" style="color: var(--primary)">R$ 0,00</h3>
             </div>
           </div>
         </div>
@@ -3100,10 +3100,30 @@
 
       const despTotal = tPag + tAbe;
 
+      const margem = tRec - despTotal;
+      const cardMargem = document.getElementById('card-margem');
+      const textMargem = document.getElementById('text-margem');
+      const valMargem = document.getElementById('totalSobras');
+
       document.getElementById('totalRec').innerText = formatarMoeda(tRec);
       document.getElementById('totalDespGeral').innerText = formatarMoeda(despTotal);
       document.getElementById('totalFaturas').innerText = formatarMoeda(tFat);
-      document.getElementById('totalSobras').innerText = formatarMoeda(tRec - despTotal);
+      valMargem.innerText = formatarMoeda(margem);
+
+      // Lógica Dinâmica para MARGEM
+      if (cardMargem) {
+        if (margem >= 0) {
+          cardMargem.classList.remove('kpi-card-red');
+          cardMargem.classList.add('kpi-card-green');
+          valMargem.style.color = 'var(--success)';
+          if (textMargem) textMargem.innerHTML = '📈 MARGEM';
+        } else {
+          cardMargem.classList.remove('kpi-card-green');
+          cardMargem.classList.add('kpi-card-red');
+          valMargem.style.color = 'var(--danger)';
+          if (textMargem) textMargem.innerHTML = '📉 MARGEM';
+        }
+      }
 
       // Chamada dos gráficos
       drawStatusChart(tPag, tAbe);
