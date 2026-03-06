@@ -1561,16 +1561,16 @@
         max-width: 50% !important;
       }
 
-      /* Slider de Cartões no Mobile */
+      /* Ícones de Cartão no Mobile (Barra Superior) */
       #container-cards-cartao {
-        display: flex;
-        /* Mantém flex mas permite JS esconder com 'none' */
+        display: flex !important;
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
-        scroll-snap-type: x mandatory;
-        gap: 0;
+        gap: 10px;
+        padding: 5px 15px !important;
+        background: transparent !important;
+        scroll-padding: 10px;
         -webkit-overflow-scrolling: touch;
-        margin-bottom: 20px !important;
       }
 
       #container-cards-cartao::-webkit-scrollbar {
@@ -1578,32 +1578,72 @@
       }
 
       #container-cards-cartao .col-5-custom {
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
-        scroll-snap-align: center;
-        padding: 0 15px !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: none !important;
+        padding: 0 !important;
       }
 
       #container-cards-cartao .card {
-        padding: 10px !important;
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
+        padding: 6px !important;
+        border: 2px solid transparent !important;
+        background: var(--card) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+        border-radius: 12px !important;
+        min-height: auto !important;
+        width: 55px !important;
+        height: 55px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
       }
 
-      /* Esconder apenas o bloco de texto interno */
-      #container-cards-cartao .card .d-flex.flex-column div.d-flex.flex-column {
+      /* Destaque para o cartão ativo no Mobile */
+      #container-cards-cartao .card.active-card-mobile {
+        border-color: var(--primary) !important;
+        background: rgba(67, 97, 238, 0.05) !important;
+        transform: scale(1.1);
+      }
+
+      #container-cards-cartao .card .d-flex.flex-column {
         display: none !important;
       }
 
       #container-cards-cartao .img-c {
-        width: auto !important;
-        max-width: 90% !important;
-        height: auto !important;
-        max-height: 200px !important;
+        width: 35px !important;
+        height: 35px !important;
         object-fit: contain !important;
-        margin: 0 auto;
-        filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
+        margin: 0 !important;
+      }
+
+      /* Card de Detalhe do Cartão (Mobile) */
+      .card-detalhe-mobile {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 15px;
+        border-left: 5px solid var(--primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      .card-detalhe-mobile .label {
+        font-size: 0.75rem;
+        color: var(--gray);
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+
+      .card-detalhe-mobile .value {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .card-detalhe-mobile .titular {
+        font-size: 0.9rem;
+        color: var(--text);
+        font-weight: 600;
       }
 
       .card-segmento-filtro {
@@ -2314,8 +2354,10 @@
         </div>
 
         <div id="container-cards-cartao" style="display:none;" class="row-5">
+          <!-- Os cards originais permanecem aqui para o PC -->
           <div class="col-5-custom">
-            <div class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
+            <div id="card-mobile-Nubank"
+              class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
               onclick="filtrarCartaoRapido('Nubank')" style="border-left: 5px solid #a000c5;">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-3">
                 <img src="https://i.ibb.co/jm4DvKG/image.png" class="img-c mb-1 mb-md-0">
@@ -2328,7 +2370,8 @@
             </div>
           </div>
           <div class="col-5-custom">
-            <div class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
+            <div id="card-mobile-Mercado Pago"
+              class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
               onclick="filtrarCartaoRapido('Mercado Pago')" style="border-left: 5px solid #fded5e;">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-3">
                 <img src="https://i.ibb.co/hFkY0VVQ/CIHzw-Oj-Zs-I0-DEAE.webp" class="img-c mb-1 mb-md-0">
@@ -2341,7 +2384,8 @@
             </div>
           </div>
           <div class="col-5-custom">
-            <div class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
+            <div id="card-mobile-Inter"
+              class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
               onclick="filtrarCartaoRapido('Inter')" style="border-left: 5px solid #ff7e3a;">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-3">
                 <img src="https://i.ibb.co/bgW2m89N/image.png" class="img-c mb-1 mb-md-0">
@@ -2354,10 +2398,11 @@
             </div>
           </div>
           <div class="col-5-custom">
-            <div class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
-              onclick="filtrarCartaoRapido('Sicoob Platinum')" style="border-left: 5px solid #00343d;">
+            <div id="card-mobile-Sicoob Platinum"
+              class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
+              onclick="filtrarCartaoRapido('Sicoob Platinum')" style="border-left: 5px solid #003641;">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-3">
-                <img src="https://i.ibb.co/p6knTbFb/download.png" class="img-c mb-1 mb-md-0">
+                <img src="https://i.ibb.co/S7m46fP/image.png" class="img-c mb-1 mb-md-0">
                 <div class="d-flex flex-column">
                   <strong class="d-block" style="font-size: 0.85rem; color: var(--text);">Sicoob Platinum</strong>
                   <small id="label-titu-sp" class="text-muted d-block" style="font-size: 0.7rem;"></small>
@@ -2367,10 +2412,11 @@
             </div>
           </div>
           <div class="col-5-custom">
-            <div class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
-              onclick="filtrarCartaoRapido('Sicoob Clássico')" style="border-left: 5px solid #00a094;">
+            <div id="card-mobile-Sicoob Clássico"
+              class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
+              onclick="filtrarCartaoRapido('Sicoob Clássico')" style="border-left: 5px solid #00a499;">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-3">
-                <img src="https://i.ibb.co/m5wswjcc/unnamed.jpg" class="img-c mb-1 mb-md-0">
+                <img src="https://i.ibb.co/S7m46fP/image.png" class="img-c mb-1 mb-md-0">
                 <div class="d-flex flex-column">
                   <strong class="d-block" style="font-size: 0.85rem; color: var(--text);">Sicoob Clássico</strong>
                   <small id="label-titu-sc" class="text-muted d-block" style="font-size: 0.7rem;"></small>
@@ -2380,6 +2426,9 @@
             </div>
           </div>
         </div>
+
+        <!-- Área de Detalhe do Cartão (Mobile) -->
+        <div id="mobile-cartao-detalhe" class="d-md-none px-3 mb-2" style="display:none;"></div>
 
         <div class="card border-0 shadow-sm">
           <div class="filter-bar d-flex align-items-center gap-2 p-3">
@@ -3152,6 +3201,11 @@
       setV('total-titu-pablo', tTitu["Pablo"]);
       setV('total-titu-casa', tTitu["Casa"]);
 
+      // Atualizar área de detalhe mobile se estiver na aba cartões
+      if (abaAtiva === 'cartoes') {
+        atualizarCardDetalheMobile(tCrd);
+      }
+
       const btnL = document.getElementById('btn-limpar-filtro-c');
       if (btnL) btnL.style.display = (filtroCardManual || filtroTitularManual) ? "inline-block" : "none";
 
@@ -3673,6 +3727,52 @@
     function filtrarCartaoRapido(nome) {
       filtroCardManual = nome;
       renderizarTabelaEAnalise();
+
+      // No Mobile, atualizar o detalhe e o destaque
+      if (window.innerWidth < 769) {
+        // Remover destaque de todos
+        document.querySelectorAll('#container-cards-cartao .card').forEach(c => c.classList.remove('active-card-mobile'));
+        // Adicionar ao clicado
+        const cardAtivo = document.getElementById('card-mobile-' + nome);
+        if (cardAtivo) cardAtivo.classList.add('active-card-mobile');
+      }
+    }
+
+    function atualizarCardDetalheMobile(tCrdCalculado) {
+      const container = document.getElementById('mobile-cartao-detalhe');
+      if (!container || window.innerWidth >= 769 || !filtroCardManual) {
+        if (container) container.style.display = 'none';
+        return;
+      }
+
+      const cartao = filtroCardManual;
+      const valor = tCrdCalculado ? tCrdCalculado[cartao] : 0;
+      const cardConf = (configApp.cartoes || []).find(c => c.nome === cartao);
+      const titular = cardConf ? cardConf.titular : '';
+
+      const borderColors = {
+        'Nubank': '#a000c5',
+        'Mercado Pago': '#fded5e',
+        'Inter': '#ff7e3a',
+        'Sicoob Platinum': '#003641',
+        'Sicoob Clássico': '#00a499'
+      };
+
+      container.style.display = 'block';
+      container.innerHTML = `
+        <div class="card-detalhe-mobile" style="border-left-color: ${borderColors[cartao] || 'var(--primary)'}">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="label">FATURA</div>
+              <div class="value">${formatarMoeda(valor)}</div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold" style="font-size: 1.1rem; color: ${borderColors[cartao] || 'var(--primary)'}">${cartao}</div>
+              <div class="titular">${titular}</div>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     function filtrarTitularRapido(nome) {
@@ -3684,6 +3784,10 @@
       filtroCardManual = "";
       filtroTitularManual = "";
       renderizarTabelaEAnalise();
+      // Ocultar detalhe mobile
+      const container = document.getElementById('mobile-cartao-detalhe');
+      if (container) container.style.display = 'none';
+      document.querySelectorAll('#container-cards-cartao .card').forEach(c => c.classList.remove('active-card-mobile'));
     }
 
     async function salvar() {
