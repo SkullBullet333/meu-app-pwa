@@ -1563,7 +1563,8 @@
 
       /* Slider de Cartões no Mobile */
       #container-cards-cartao {
-        display: flex !important;
+        display: flex;
+        /* Mantém flex mas permite JS esconder com 'none' */
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         scroll-snap-type: x mandatory;
@@ -1584,21 +1585,24 @@
       }
 
       #container-cards-cartao .card {
-        padding: 5px !important;
+        padding: 10px !important;
         border: none !important;
         background: transparent !important;
         box-shadow: none !important;
       }
 
-      #container-cards-cartao .card .d-flex.flex-column {
+      /* Esconder apenas o bloco de texto interno */
+      #container-cards-cartao .card .d-flex.flex-column div.d-flex.flex-column {
         display: none !important;
       }
 
       #container-cards-cartao .img-c {
-        width: 100% !important;
+        width: auto !important;
+        max-width: 90% !important;
         height: auto !important;
         max-height: 200px !important;
         object-fit: contain !important;
+        margin: 0 auto;
         filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
       }
 
