@@ -1831,6 +1831,35 @@
     </div>
   </div>
 
+  <!-- TELA DE LOGIN -->
+  <div id="view-login" style="display: none;">
+    <div class="login-box">
+      <div class="login-logo">
+        <i class="fa-solid fa-vault"></i>
+      </div>
+      <h2 class="login-title">Radar Financeiro</h2>
+      <p class="login-subtitle">Acesse sua conta para continuar</p>
+
+      <div class="login-input-group">
+        <label>USUÁRIO</label>
+        <input type="text" id="login-user" placeholder="Seu usuário" autocomplete="username"
+          onkeydown="if(event.key==='Enter') realizarLogin()">
+      </div>
+
+      <div class="login-input-group">
+        <label>SENHA</label>
+        <input type="password" id="login-pass" placeholder="Sua senha" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') realizarLogin()">
+      </div>
+
+      <button id="btn-realizar-login" class="btn-login" onclick="realizarLogin()">
+        <i class="fa-solid fa-right-to-bracket"></i> Entrar
+      </button>
+
+      <div id="login-error" class="text-danger small mt-3 fw-bold" style="display: none;"></div>
+    </div>
+  </div>
+
   <div class="layout-wrapper">
     <nav class="sidebar">
       <div class="logo mt-4 mb-2 d-flex align-items-center gap-3" style="padding-left: 5px;">
@@ -2318,35 +2347,6 @@
               <tbody id="corpoTabela"></tbody>
             </table>
           </div>
-        </div>
-      </div>
-
-      <!-- TELA DE LOGIN -->
-      <div id="view-login" style="display: none;">
-        <div class="login-box">
-          <div class="login-logo">
-            <i class="fa-solid fa-vault"></i>
-          </div>
-          <h2 class="login-title">Radar Financeiro</h2>
-          <p class="login-subtitle">Acesse sua conta para continuar</p>
-
-          <div class="login-input-group">
-            <label>USUÁRIO</label>
-            <input type="text" id="login-user" placeholder="Seu usuário" autocomplete="username"
-              onkeydown="if(event.key==='Enter') realizarLogin()">
-          </div>
-
-          <div class="login-input-group">
-            <label>SENHA</label>
-            <input type="password" id="login-pass" placeholder="Sua senha" autocomplete="current-password"
-              onkeydown="if(event.key==='Enter') realizarLogin()">
-          </div>
-
-          <button id="btn-realizar-login" class="btn-login" onclick="realizarLogin()">
-            <i class="fa-solid fa-right-to-bracket"></i> Entrar
-          </button>
-
-          <div id="login-error" class="text-danger small mt-3 fw-bold" style="display: none;"></div>
         </div>
       </div>
 
