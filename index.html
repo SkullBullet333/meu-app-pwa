@@ -1364,9 +1364,11 @@
 
       .topbar {
         display: flex !important;
-        flex-direction: column !important;
-        align-items: flex-start !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
         gap: 10px !important;
+        flex-wrap: nowrap !important;
       }
 
       .topbar-brand {
@@ -1375,13 +1377,25 @@
       }
 
       #page-title {
-        font-size: 1.5rem !important;
+        font-size: 1.1rem !important;
+        white-space: nowrap;
       }
 
       .controls {
-        width: 100%;
+        width: auto;
         display: flex;
         justify-content: center;
+        padding: 2px 8px;
+      }
+
+      .controls button {
+        display: none !important;
+      }
+
+      .date-display {
+        font-size: 0.9rem !important;
+        min-width: unset;
+        margin: 0 !important;
       }
 
       .kpi-grid-mobile {
@@ -1398,8 +1412,8 @@
       }
 
       .kpi-card {
-        padding: 18px 10px !important;
-        min-height: 110px;
+        padding: 10px !important;
+        min-height: 80px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -1408,12 +1422,12 @@
       }
 
       .kpi-card h3 {
-        font-size: 1.4rem !important;
+        font-size: 1.1rem !important;
       }
 
       .kpi-card small {
-        font-size: 0.75rem !important;
-        margin-bottom: 5px;
+        font-size: 0.65rem !important;
+        margin-bottom: 2px;
       }
 
       .table td,
