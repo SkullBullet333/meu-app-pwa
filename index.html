@@ -1626,11 +1626,27 @@
       }
 
       /* Estilo para Descrição no Mobile */
-      .aba-geral td:nth-child(3) {
+      .aba-geral td:nth-child(3),
+      .aba-cartoes td:nth-child(3) {
         max-width: 140px !important;
         text-overflow: ellipsis !important;
         overflow: hidden !important;
         white-space: nowrap !important;
+      }
+
+      /* Otimização de Tabela Mobile - Aba Cartões */
+      .aba-cartoes th:nth-child(1),
+      .aba-cartoes td:nth-child(1),
+      /* Cartão */
+      .aba-cartoes th:nth-child(2),
+      .aba-cartoes td:nth-child(2),
+      /* Titular */
+      .aba-cartoes th:nth-child(4),
+      .aba-cartoes td:nth-child(4)
+
+      /* Categoria */
+        {
+        display: none !important;
       }
 
       /* Garantir que botões de confirmação/cancelamento apareçam no mobile */
