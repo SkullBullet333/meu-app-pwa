@@ -1561,6 +1561,47 @@
         max-width: 50% !important;
       }
 
+      /* Slider de Cartões no Mobile */
+      #container-cards-cartao {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        scroll-snap-type: x mandatory;
+        gap: 0;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 20px !important;
+      }
+
+      #container-cards-cartao::-webkit-scrollbar {
+        display: none;
+      }
+
+      #container-cards-cartao .col-5-custom {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        scroll-snap-align: center;
+        padding: 0 15px !important;
+      }
+
+      #container-cards-cartao .card {
+        padding: 5px !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+
+      #container-cards-cartao .card .d-flex.flex-column {
+        display: none !important;
+      }
+
+      #container-cards-cartao .img-c {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 200px !important;
+        object-fit: contain !important;
+        filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
+      }
+
       .card-segmento-filtro {
         min-height: 80px !important;
         padding: 10px !important;
