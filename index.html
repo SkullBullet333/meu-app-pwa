@@ -2589,37 +2589,6 @@
     }
 
     // ==================== FUNÇÕES DE DATA ====================
-    function projetarProximoVencimento(dataBase, mesesApos, isUltimoDia, diaOriginal) {
-      let novaData = new Date(dataBase.getFullYear(), dataBase.getMonth() + mesesApos, 1);
-
-      if (isUltimoDia) {
-        novaData.setMonth(novaData.getMonth() + 1);
-        novaData.setDate(0);
-      } else {
-        let ultimoDiaMes = new Date(novaData.getFullYear(), novaData.getMonth() + 1, 0).getDate();
-        novaData.setDate(Math.min(diaOriginal, ultimoDiaMes));
-      }
-
-      // Ajuste de Final de Semana: Sábado -> Segunda (+2), Domingo -> Segunda (+1)
-      let diaSemana = novaData.getDay();
-      if (diaSemana === 6) { // Sábado
-        novaData.setDate(novaData.getDate() + 2);
-      } else if (diaSemana === 0) { // Domingo
-        novaData.setDate(novaData.getDate() + 1);
-      }
-
-      return novaData;
-    }
-
-    function calcularCompetencia(data) {
-      let d = new Date(data.getTime());
-      // Se for após o dia 25, move para a competência do mês seguinte
-      if (d.getDate() > 25) {
-        d.setMonth(d.getMonth() + 1);
-      }
-      return ("0" + (d.getMonth() + 1)).slice(-2) + "/" + d.getFullYear();
-    }
-
     function changeMonth(d) {
       currentMonth += d;
       if (currentMonth > 12) { currentMonth = 1; currentYear++; }
@@ -3422,57 +3391,36 @@
     async function salvar() {
       const linhaEdit = document.getElementById('linha-edit').value;
       const descricao = document.getElementById('desc').value;
-      const valorTotal = Number(document.getElementById('val').value);
+      const valor = document.getElementById('val').value;
       const categoria = document.getElementById('cat-geral').value;
       const titular = document.getElementById('titu').value;
-      const dia = Number(document.getElementById('venc-dia').value || '15');
-      const totalParcelas = Number(document.getElementById('parc').value || 1);
+      const dia = document.getElementById('venc-dia').value || '15';
 
-      if (!descricao || !valorTotal || !titular) {
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const vencimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
+
+      if (!descricao || !valor || !titular) {
         showToast('Preencha todos os campos!', 'warning');
         return;
       }
 
-      const valorUnitario = valorTotal / totalParcelas;
-      const mesAtual = currentMonth - 1; // 0-indexed for Date
-      const anoAtual = currentYear;
-      const dataInicial = new Date(anoAtual, mesAtual, dia);
-
-      const diaOriginal = dataInicial.getDate();
-      const ultimoDiaMesOriginal = new Date(dataInicial.getFullYear(), dataInicial.getMonth() + 1, 0).getDate();
-      const isUltimoDiaOriginal = (diaOriginal === ultimoDiaMesOriginal);
+      const dados = {
+        linha: linhaEdit,
+        descricao: descricao,
+        categoria: categoria,
+        valor: valor,
+        totalParcelas: document.getElementById('parc').value,
+        vencimento: vencimento,
+        titular: titular
+      };
 
       showLoading();
       try {
         if (linhaEdit) {
-          const vencimentoIso = dataInicial.toISOString().split('T')[0];
-          const comp = calcularCompetencia(dataInicial);
-          await callAppsScript('editarDespesa', {
-            linha: linhaEdit,
-            descricao,
-            categoria,
-            valor: valorTotal,
-            vencimento: vencimentoIso,
-            titular,
-            competencia: comp
-          });
+          await callAppsScript('editarDespesa', dados);
         } else {
-          for (let i = 0; i < totalParcelas; i++) {
-            let dataVenc = projetarProximoVencimento(dataInicial, i, isUltimoDiaOriginal, diaOriginal);
-            const comp = calcularCompetencia(dataVenc);
-            const vencimentoIso = dataVenc.toISOString().split('T')[0];
-
-            await callAppsScript('salvarDespesa', {
-              descricao: descricao + (totalParcelas > 1 ? ` (${i + 1}/${totalParcelas})` : ''),
-              categoria: categoria,
-              valor: valorUnitario,
-              totalParcelas: 1, // Enviamos como 1 pois o front já desmembrou
-              vencimento: vencimentoIso,
-              titular: titular,
-              competencia: comp,
-              parcela: (i + 1)
-            });
-          }
+          await callAppsScript('salvarDespesa', dados);
         }
         showToast('Despesa salva com sucesso!', 'success');
         fecharForms();
@@ -3487,53 +3435,34 @@
     async function salvarReceita() {
       const linhaEdit = document.getElementById('linha-edit-r').value;
       const descricao = document.getElementById('desc-r').value;
-      const valorTotal = Number(document.getElementById('val-r').value);
+      const valor = document.getElementById('val-r').value;
       const titular = document.getElementById('titu-r').value;
-      const dia = Number(document.getElementById('rec-dia').value || '5');
-      const totalParcelas = Number(document.getElementById('parc-r').value || 1);
+      const dia = document.getElementById('rec-dia').value || '5';
 
-      if (!descricao || !valorTotal || !titular) {
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const recebimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
+
+      if (!descricao || !valor || !titular) {
         showToast('Preencha todos os campos!', 'warning');
         return;
       }
 
-      const valorUnitario = valorTotal / totalParcelas;
-      const mesAtual = currentMonth - 1;
-      const anoAtual = currentYear;
-      const dataInicial = new Date(anoAtual, mesAtual, dia);
-
-      const diaOriginal = dataInicial.getDate();
-      const ultimoDiaMesOriginal = new Date(dataInicial.getFullYear(), dataInicial.getMonth() + 1, 0).getDate();
-      const isUltimoDiaOriginal = (diaOriginal === ultimoDiaMesOriginal);
+      const dados = {
+        linha: linhaEdit,
+        descricao: descricao,
+        valor: valor,
+        totalParcelas: document.getElementById('parc-r').value,
+        recebimento: recebimento,
+        titular: titular
+      };
 
       showLoading();
       try {
         if (linhaEdit) {
-          const recebimentoIso = dataInicial.toISOString().split('T')[0];
-          const comp = calcularCompetencia(dataInicial);
-          await callAppsScript('editarReceita', {
-            linha: linhaEdit,
-            descricao,
-            valor: valorTotal,
-            recebimento: recebimentoIso,
-            titular,
-            competencia: comp
-          });
+          await callAppsScript('editarReceita', dados);
         } else {
-          for (let i = 0; i < totalParcelas; i++) {
-            let dataRec = projetarProximoVencimento(dataInicial, i, isUltimoDiaOriginal, diaOriginal);
-            const comp = calcularCompetencia(dataRec);
-            const recebimentoIso = dataRec.toISOString().split('T')[0];
-
-            await callAppsScript('salvarReceita', {
-              descricao: descricao + (totalParcelas > 1 ? ` (${i + 1}/${totalParcelas})` : ''),
-              valor: valorUnitario,
-              totalParcelas: 1,
-              recebimento: recebimentoIso,
-              titular: titular,
-              competencia: comp
-            });
-          }
+          await callAppsScript('salvarReceita', dados);
         }
         showToast('Receita salva com sucesso!', 'success');
         fecharForms();
@@ -3549,61 +3478,38 @@
       const linhaEdit = document.getElementById('linha-edit-c').value;
       const cartaoInfo = document.getElementById('cartao-c').value.split('|');
       const descricao = document.getElementById('desc-c').value;
-      const valorTotal = Number(document.getElementById('val-c').value);
-      const totalParcelas = Number(document.getElementById('parc-c').value || 1);
+      const valor = document.getElementById('val-c').value;
 
-      if (!descricao || !valorTotal || cartaoInfo.length < 2) {
+      const nomeCartao = cartaoInfo[0];
+      const titularCartao = cartaoInfo[1];
+      const diaVencimento = cartaoInfo[2] || '10';
+
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+      const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
+
+      if (!descricao || !valor || cartaoInfo.length < 2) {
         showToast('Preencha todos os campos!', 'warning');
         return;
       }
 
-      const nomeCartao = cartaoInfo[0];
-      const titularCartao = cartaoInfo[1];
-      const diaVencimento = Number(cartaoInfo[2] || '10');
-
-      const valorUnitario = valorTotal / totalParcelas;
-      const mesAtual = currentMonth - 1;
-      const anoAtual = currentYear;
-      const dataInicial = new Date(anoAtual, mesAtual, diaVencimento);
-
-      const diaOriginal = dataInicial.getDate();
-      const ultimoDiaMesOriginal = new Date(dataInicial.getFullYear(), dataInicial.getMonth() + 1, 0).getDate();
-      const isUltimoDiaOriginal = (diaOriginal === ultimoDiaMesOriginal);
+      const dados = {
+        linha: linhaEdit,
+        cartao: nomeCartao,
+        titular: titularCartao,
+        descricao: descricao,
+        categoria: document.getElementById('cat-c').value.trim(),
+        valor: valor,
+        totalParcelas: document.getElementById('parc-c').value,
+        vencimento: vencimento
+      };
 
       showLoading();
       try {
         if (linhaEdit) {
-          const vencimentoIso = dataInicial.toISOString().split('T')[0];
-          const comp = calcularCompetencia(dataInicial);
-          await callAppsScript('editarCartao', {
-            linha: linhaEdit,
-            cartao: nomeCartao,
-            titular: titularCartao,
-            descricao,
-            categoria: document.getElementById('cat-c').value.trim(),
-            valor: valorTotal,
-            vencimento: vencimentoIso,
-            competencia: comp
-          });
+          await callAppsScript('editarCartao', dados);
         } else {
-          // No GAS, lancarParcelas faz o loop. Mas para replicar a lógica de weekend/competência aqui:
-          for (let i = 0; i < totalParcelas; i++) {
-            let dataVenc = projetarProximoVencimento(dataInicial, i, isUltimoDiaOriginal, diaOriginal);
-            const comp = calcularCompetencia(dataVenc);
-            const vencimentoIso = dataVenc.toISOString().split('T')[0];
-
-            await callAppsScript('salvarCartao', {
-              cartao: nomeCartao,
-              titular: titularCartao,
-              descricao: descricao,
-              categoria: document.getElementById('cat-c').value.trim(),
-              valor: valorUnitario,
-              totalParcelas: totalParcelas,
-              vencimento: vencimentoIso,
-              competencia: comp,
-              parcela: (i + 1)
-            });
-          }
+          await callAppsScript('lancarParcelas', dados);
         }
         showToast('Cartão lançado com sucesso!', 'success');
         fecharForms();
