@@ -142,6 +142,14 @@
       font-weight: bold;
     }
 
+    .sidebar-user-img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+    }
+
     body.dark-mode .date-display {
       transition: all 0.3s ease;
     }
@@ -4539,18 +4547,19 @@
 
       if (!user || !nameEl) return;
 
-      // Mapeamento de Fotos
+      // Mapeamento de Fotos (Backend retorna tudo em minúsculo)
       const fotos = {
-        'Noádia': 'https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png',
-        'Pablo': 'https://images.icon-icons.com/2643/PNG/512/male_man_people_person_avatar_white_tone_icon_159363.png',
-        'Casa': 'https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png'
+        'noádia': 'https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png',
+        'pablo': 'https://images.icon-icons.com/2643/PNG/512/male_man_people_person_avatar_white_tone_icon_159363.png',
+        'casa': 'https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png'
       };
 
+      const userKey = String(user || '').trim().toLowerCase();
       nameEl.innerText = user;
 
-      if (fotos[user]) {
+      if (fotos[userKey]) {
         if (photoEl) {
-          photoEl.src = fotos[user];
+          photoEl.src = fotos[userKey];
           photoEl.style.display = 'block';
         }
         if (iconEl) iconEl.style.display = 'none';
