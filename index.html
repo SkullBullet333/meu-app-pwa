@@ -1563,7 +1563,8 @@
 
       /* Ícones de Cartão no Mobile (Barra Superior) */
       #container-cards-cartao {
-        display: flex !important;
+        display: flex;
+        /* Removido !important para não vazar em outras abas */
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         gap: 10px;
@@ -1606,7 +1607,9 @@
         transform: scale(1.1);
       }
 
-      #container-cards-cartao .card .d-flex.flex-column {
+      /* Esconder apenas o bloco de texto interno (div posterior à imagem) */
+      #container-cards-cartao .card .d-flex.flex-column div.d-flex.flex-column,
+      #container-cards-cartao .card .d-flex.flex-column>div:not(:has(img)) {
         display: none !important;
       }
 
@@ -2402,7 +2405,7 @@
               class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
               onclick="filtrarCartaoRapido('Sicoob Platinum')" style="border-left: 5px solid #003641;">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-3">
-                <img src="https://i.ibb.co/S7m46fP/image.png" class="img-c mb-1 mb-md-0">
+                <img src="https://i.ibb.co/p6knTbFb/download.png" class="img-c mb-1 mb-md-0">
                 <div class="d-flex flex-column">
                   <strong class="d-block" style="font-size: 0.85rem; color: var(--text);">Sicoob Platinum</strong>
                   <small id="label-titu-sp" class="text-muted d-block" style="font-size: 0.7rem;"></small>
@@ -2416,7 +2419,7 @@
               class="card p-3 card-click shadow-sm card-segmento-filtro text-center text-md-start"
               onclick="filtrarCartaoRapido('Sicoob Clássico')" style="border-left: 5px solid #00a499;">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-3">
-                <img src="https://i.ibb.co/S7m46fP/image.png" class="img-c mb-1 mb-md-0">
+                <img src="https://i.ibb.co/m5wswjcc/unnamed.jpg" class="img-c mb-1 mb-md-0">
                 <div class="d-flex flex-column">
                   <strong class="d-block" style="font-size: 0.85rem; color: var(--text);">Sicoob Clássico</strong>
                   <small id="label-titu-sc" class="text-muted d-block" style="font-size: 0.7rem;"></small>
@@ -3710,6 +3713,10 @@
 
       if (contTitular) contTitular.style.display = (aba === 'geral') ? 'flex' : 'none';
       if (contCartao) contCartao.style.display = (aba === 'cartoes') ? 'flex' : 'none';
+
+      // Esconder detalhe mobile se não for aba cartões
+      const detMob = document.getElementById('mobile-cartao-detalhe');
+      if (detMob) detMob.style.display = (aba === 'cartoes' && filtroCardManual) ? 'block' : 'none';
 
       renderizarTabelaEAnalise();
     }
