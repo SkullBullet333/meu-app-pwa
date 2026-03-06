@@ -1459,6 +1459,29 @@
         height: 45px !important;
       }
 
+      /* Otimização Extrato Dashboard Mobile */
+      .dashboard-table-mobile td {
+        white-space: normal !important;
+      }
+
+      .dashboard-table-mobile td:first-child {
+        padding-right: 5px !important;
+        max-width: 60vw;
+      }
+
+      .dashboard-table-mobile .icon-circle {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.85rem !important;
+      }
+
+      .text-truncate-custom {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 155px;
+      }
+
       .kpi-card small {
         font-size: 0.75rem !important;
         margin-bottom: 5px;
@@ -2799,19 +2822,19 @@
         }
 
         extratoBody.innerHTML += `
-          <tr>
+          <tr class="dashboard-table-mobile">
             <td class="align-middle">
-              <div class="d-flex align-items-center gap-3">
+              <div class="d-flex align-items-center gap-2">
                 <div class="icon-circle">
                   <i class="fa-solid ${getIconByDescription(i.descricao)}"></i>
                 </div>
-                <div class="col-descricao-texto">
-                  <div class="fw-bold" style="font-size:0.85rem" title="${i.descricao || ''}">${i.descricao || ''}</div>
+                <div class="col-descricao-texto" style="flex: 1; min-width: 0;">
+                  <div class="fw-bold text-truncate-custom" style="font-size:0.85rem" title="${i.descricao || ''}">${i.descricao || ''}</div>
                   <div class="text-muted" style="font-size:0.7rem; opacity: 1;">${subtitle}</div>
                 </div>
               </div>
             </td>
-            <td class="align-middle text-end" style="white-space: nowrap;">
+            <td class="align-middle text-end" style="white-space: nowrap; flex-shrink: 0; min-width: 85px;">
               <div class="fw-bold" style="font-size:0.9rem">${formatarMoeda(i.valor)}</div>
               <div class="mt-1">
                 <span class="${statusClass}" style="font-size:0.65rem; padding: 2px 6px;">${labelStatus}</span>
