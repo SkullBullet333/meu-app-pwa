@@ -1372,39 +1372,65 @@
       .topbar-brand {
         width: 100%;
         text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .mobile-date-btn {
+        padding: 5px;
+        color: var(--primary);
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(67, 97, 238, 0.1);
+        border-radius: 8px;
+        transition: 0.2s;
+      }
+
+      .mobile-date-btn:active {
+        transform: scale(0.95);
+        background: rgba(67, 97, 238, 0.2);
       }
 
       #page-title {
         font-size: 1.5rem !important;
+        margin: 0 !important;
+      }
+
+      .topbar-controls {
+        display: none !important;
       }
 
       .controls {
-        width: 100%;
-        display: flex;
-        justify-content: center;
+        display: none !important;
       }
 
       .kpi-grid-mobile {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 12px !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        margin: 0 -6px !important;
+        width: calc(100% + 12px) !important;
+        gap: 0 !important;
       }
 
       .kpi-grid-mobile>div {
-        padding: 0 !important;
+        padding: 6px !important;
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
       }
 
       .kpi-card {
-        padding: 18px 10px !important;
-        min-height: 110px;
+        padding: 16px 12px !important;
+        min-height: 100px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         width: 100% !important;
         margin: 0 !important;
+        box-sizing: border-box;
       }
 
       .kpi-card h3 {
@@ -1675,6 +1701,9 @@
       <header class="topbar mb-4">
         <div class="topbar-brand">
           <h2 class="fw-bold m-0" id="page-title">Dashboard Financeiro</h2>
+          <div class="mobile-date-btn d-md-none" onclick="abrirModalPeriodo()">
+            <i class="fa-solid fa-calendar-days"></i>
+          </div>
         </div>
         <div class="topbar-controls">
           <div class="controls">
@@ -2458,13 +2487,12 @@
       }
 
       const titles = {
-        'dashboard': 'Dashboard Financeiro',
-        'novo': '➕ Novo Lançamento',
+        'dashboard': '📈 Dashboard Financeiro',
         'geral': '📋 Despesas Fixas',
         'cartoes': '💳 Meus Cartões',
         'receitas': '💰 Minhas Receitas',
         'radar': '🔍 Radar Financeiro',
-        'config': '⚙️ Configurações do Sistema'
+        'config': '⚙️ Configurações'
       };
       const titleEl = document.getElementById('page-title');
       if (titleEl) titleEl.innerText = titles[view] || '';
