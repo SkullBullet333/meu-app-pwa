@@ -4208,7 +4208,7 @@
         if (res.sucesso) {
           localStorage.setItem('usuarioLogado', res.usuario);
           document.getElementById('view-login').style.display = 'none';
-          document.querySelector('.container-fluid').style.display = 'flex';
+          document.querySelector('.layout-wrapper').style.display = 'flex';
 
           const savedAba = localStorage.getItem('abaAtiva') || 'dashboard';
           nav(savedAba);
@@ -4253,11 +4253,11 @@
       const usuarioLogado = localStorage.getItem('usuarioLogado');
       if (!usuarioLogado) {
         document.getElementById('view-login').style.display = 'flex';
-        document.querySelector('.container-fluid').style.display = 'none';
+        document.querySelector('.layout-wrapper').style.display = 'none';
       } else {
         document.getElementById('view-login').style.display = 'none';
-        document.querySelector('.container-fluid').style.display = 'flex';
-        nav(usuarioLogado ? (localStorage.getItem('abaAtiva') || 'dashboard') : 'login');
+        document.querySelector('.layout-wrapper').style.display = 'flex';
+        nav(localStorage.getItem('abaAtiva') || 'dashboard');
       }
 
       updateDateDisplay();
