@@ -1567,9 +1567,8 @@
         /* Removido !important para não vazar em outras abas */
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
-        gap: 2px;
-        justify-content: center;
-        padding: 5px 8px !important;
+        gap: 10px;
+        padding: 5px 15px !important;
         background: transparent !important;
         scroll-padding: 10px;
         -webkit-overflow-scrolling: touch;
@@ -1963,8 +1962,11 @@
   <div class="layout-wrapper">
     <nav class="sidebar">
       <div class="logo mt-4 mb-2 d-flex align-items-center gap-3" style="padding-left: 5px;">
-        <i class="fa-solid fa-money-bill-trend-up text-primary" style="font-size: 1.8rem;"></i>
-        <span class="fw-bold fs-5" style="color: var(--text); opacity: 0; transition: opacity 0.3s;">FinanceBox</span>
+        <img id="sidebar-user-photo" src="" class="sidebar-user-img" style="display: none;">
+        <i id="sidebar-default-icon" class="fa-solid fa-money-bill-trend-up text-primary"
+          style="font-size: 1.8rem;"></i>
+        <span id="sidebar-user-name" class="fw-bold fs-5"
+          style="color: var(--text); opacity: 0; transition: opacity 0.3s;">FinanceBox</span>
       </div>
       <ul class="menu">
         <li class="active" onclick="nav('dashboard')" title="Dashboard">
@@ -4386,6 +4388,7 @@
           // Carregar dados após login
           carregar();
           carregarConfigs();
+          atualizarSidebarUsuario();
         } else {
           errorDiv.innerText = res.erro || "Usuário ou senha inválidos";
           errorDiv.style.display = "block";
@@ -4426,6 +4429,7 @@
         document.getElementById('view-login').style.display = 'none';
         document.querySelector('.layout-wrapper').style.display = 'flex';
         nav(localStorage.getItem('abaAtiva') || 'dashboard');
+        atualizarSidebarUsuario();
       }
 
       updateDateDisplay();
@@ -4526,6 +4530,35 @@
     window.atualizarSelectsDinamicos = atualizarSelectsDinamicos;
     window.realizarLogin = realizarLogin;
     window.logout = logout;
+
+    function atualizarSidebarUsuario() {
+      const user = localStorage.getItem('usuarioLogado');
+      const photoEl = document.getElementById('sidebar-user-photo');
+      const iconEl = document.getElementById('sidebar-default-icon');
+      const nameEl = document.getElementById('sidebar-user-name');
+
+      if (!user || !nameEl) return;
+
+      // Mapeamento de Fotos
+      const fotos = {
+        'Noádia': 'https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png',
+        'Pablo': 'https://images.icon-icons.com/2643/PNG/512/male_man_people_person_avatar_white_tone_icon_159363.png',
+        'Casa': 'https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png'
+      };
+
+      nameEl.innerText = user;
+
+      if (fotos[user]) {
+        if (photoEl) {
+          photoEl.src = fotos[user];
+          photoEl.style.display = 'block';
+        }
+        if (iconEl) iconEl.style.display = 'none';
+      } else {
+        if (photoEl) photoEl.style.display = 'none';
+        if (iconEl) iconEl.style.display = 'block';
+      }
+    }
   </script>
 </body>
 
