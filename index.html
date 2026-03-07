@@ -2574,26 +2574,26 @@
                 </button>
               </div>
 
-              <h6 class="fw-bold text-muted small mb-3 text-uppercase">Limpeza de Dados</h6>
+              <h6 class="fw-bold text-muted small mb-3 text-uppercase">Limpar Simulações</h6>
               <div class="row g-2">
                 <div class="col-6">
                   <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('simulacoes')">
-                    <i class="fa-solid fa-vial me-2"></i>Limpar Simulações
+                    <i class="fa-solid fa-vial me-2"></i>Tudo (Geral)
                   </button>
                 </div>
                 <div class="col-6">
                   <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('receitas')">
-                    <i class="fa-solid fa-hand-holding-dollar me-2"></i>Limpar Receitas
+                    <i class="fa-solid fa-hand-holding-dollar me-2"></i>Só Receitas
                   </button>
                 </div>
                 <div class="col-6">
                   <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('cartoes')">
-                    <i class="fa-solid fa-credit-card me-2"></i>Limpar Cartões
+                    <i class="fa-solid fa-credit-card me-2"></i>Só Cartões
                   </button>
                 </div>
                 <div class="col-6">
                   <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('despesas')">
-                    <i class="fa-solid fa-money-bill-transfer me-2"></i>Limpar Despesas
+                    <i class="fa-solid fa-money-bill-transfer me-2"></i>Só Despesas
                   </button>
                 </div>
               </div>
@@ -4280,19 +4280,19 @@
       let msg = "";
       let icon = "delete_sweep";
 
-      if (tipo === 'simulacoes') msg = "Deseja APAGAR TODAS as simulações do sistema?";
-      else if (tipo === 'receitas') msg = "Deseja APAGAR TODAS as receitas lançadas?";
-      else if (tipo === 'cartoes') msg = "Deseja APAGAR TODOS os gastos de cartão?";
-      else if (tipo === 'despesas') msg = "Deseja APAGAR TODAS as despesas fixas/variáveis?";
+      if (tipo === 'simulacoes') msg = "Deseja APAGAR TODAS as simulações de TODAS as abas?";
+      else if (tipo === 'receitas') msg = "Deseja APAGAR TODAS as simulações de RECEITAS?";
+      else if (tipo === 'cartoes') msg = "Deseja APAGAR TODAS as simulações de CARTÕES?";
+      else if (tipo === 'despesas') msg = "Deseja APAGAR TODAS as simulações de DESPESAS FIXAS/VARIÁVEIS?";
 
       showActionModal(msg, async function () {
         showLoading();
         try {
           await callAppsScript('limparDados', { tipo });
-          showToast('Dados limpos com sucesso!', 'success');
+          showToast('Simulações limpas com sucesso!', 'success');
           await carregar();
         } catch (error) {
-          showToast('Erro ao limpar dados: ' + error.message, 'danger');
+          showToast('Erro ao limpar simulações: ' + error.message, 'danger');
         } finally {
           hideLoading();
         }
