@@ -2197,7 +2197,7 @@
               <div class="entry-card entry-accent-primary" id="card-geral" style="display: none;"
                 onclick="event.stopPropagation()">
                 <div class="entry-header">
-                  <div><i class="fa-solid fa-wallet me-2"></i>Nova Despesa Fixa</div>
+                  <div><i class="fa-solid fa-wallet me-2"></i><span id="title-geral">Nova Despesa Fixa</span></div>
                   <button class="btn btn-link text-white p-0" onclick="fecharForms()"><i
                       class="fa-solid fa-times fa-lg"></i></button>
                 </div>
@@ -2243,7 +2243,7 @@
               <div class="entry-card entry-accent-success" id="card-receita" style="display: none;"
                 onclick="event.stopPropagation()">
                 <div class="entry-header">
-                  <div><i class="fa-solid fa-sack-dollar me-2"></i>Nova Receita</div>
+                  <div><i class="fa-solid fa-sack-dollar me-2"></i><span id="title-receita">Nova Receita</span></div>
                   <button class="btn btn-link text-white p-0" onclick="fecharForms()"><i
                       class="fa-solid fa-times fa-lg"></i></button>
                 </div>
@@ -2284,7 +2284,8 @@
               <div class="entry-card entry-accent-purple" id="card-cartao" style="display: none;"
                 onclick="event.stopPropagation()">
                 <div class="entry-header">
-                  <div><i class="fa-solid fa-credit-card me-2"></i>Novo Gasto no Cartão</div>
+                  <div><i class="fa-solid fa-credit-card me-2"></i><span id="title-cartao">Novo Gasto no Cartão</span>
+                  </div>
                   <button class="btn btn-link text-white p-0" onclick="fecharForms()"><i
                       class="fa-solid fa-times fa-lg"></i></button>
                 </div>
@@ -2984,6 +2985,13 @@
       document.getElementById('parc').disabled = false;
       document.getElementById('parc-r').disabled = false;
       document.getElementById('parc-c').disabled = false;
+
+      document.getElementById('title-geral').innerText = "Nova Despesa Fixa";
+      document.getElementById('btn-g').innerHTML = '<i class="fa-solid fa-check me-2"></i>Salvar Lançamento';
+      document.getElementById('title-receita').innerText = "Nova Receita";
+      document.getElementById('btn-r').innerHTML = '<i class="fa-solid fa-plus me-2"></i>Salvar Receita';
+      document.getElementById('title-cartao').innerText = "Novo Gasto no Cartão";
+      document.getElementById('btn-c').innerHTML = '<i class="fa-solid fa-credit-card me-2"></i>Lançar no Cartão';
     }
 
     // ==================== FUNÇÕES DE DATA ====================
@@ -3835,8 +3843,64 @@
     }
 
     function abrirEdicao(l) {
-      editingRowId = l;
-      renderizarTabelaEAnalise();
+      if (window.innerWidth > 768) {
+        // Desktop: Edição Inline
+        editingRowId = l;
+        renderizarTabelaEAnalise();
+      } else {
+        // Mobile: Abrir Formulário preenchido
+        if (abaAtiva === 'geral') {
+          const item = (dGeral || []).find(i => i.linha === l);
+          if (!item) return;
+          document.getElementById('linha-edit').value = item.linha || "";
+          document.getElementById('desc').value = item.descricao || "";
+          document.getElementById('val').value = item.valor || "";
+          document.getElementById('cat-geral').value = item.categoria || "";
+          document.getElementById('parc').value = (item.parcela ? item.parcela.split('/')[0] : "1");
+          document.getElementById('parc').disabled = true; // Não muda parcelas na edição
+          document.getElementById('venc-dia').value = (item.vencimento ? item.vencimento.split('/')[0] : "15");
+          document.getElementById('titu').value = (typeof item.titular === 'object' ? item.titular.nome : item.titular) || "";
+
+          document.getElementById('title-geral').innerText = "Editar Despesa Fixa";
+          document.getElementById('btn-g').innerHTML = '<i class="fa-solid fa-check me-2"></i>Atualizar Lançamento';
+
+          mostrarForm('geral');
+        } else if (abaAtiva === 'receitas') {
+          const item = (dReceitas || []).find(i => i.linha === l);
+          if (!item) return;
+          document.getElementById('linha-edit-r').value = item.linha || "";
+          document.getElementById('desc-r').value = item.descricao || "";
+          document.getElementById('val-r').value = item.valor || "";
+          document.getElementById('parc-r').value = (item.parcelas ? item.parcelas.split('/')[0] : "1");
+          document.getElementById('parc-r').disabled = true;
+          document.getElementById('rec-dia').value = (item.vencimento ? item.vencimento.split('/')[0] : "5");
+          document.getElementById('titu-r').value = (typeof item.titular === 'object' ? item.titular.nome : item.titular) || "";
+
+          document.getElementById('title-receita').innerText = "Editar Receita";
+          document.getElementById('btn-r').innerHTML = '<i class="fa-solid fa-check me-2"></i>Atualizar Receita';
+
+          mostrarForm('receita');
+        } else if (abaAtiva === 'cartoes') {
+          const item = (dCartoes || []).find(i => i.linha === l);
+          if (!item) return;
+          document.getElementById('linha-edit-c').value = item.linha || "";
+          document.getElementById('desc-c').value = item.descricao || "";
+          document.getElementById('val-c').value = item.valor || "";
+          document.getElementById('cat-c').value = item.categoria || "";
+          document.getElementById('parc-c').value = (item.parcela ? item.parcela.split('/')[0] : "1");
+          document.getElementById('parc-c').disabled = true;
+
+          // Encontrar o cartão correto no combo
+          const cartaoConf = (configApp.cartoes || []).find(c => c.nome === item.cartao);
+          if (cartaoConf) {
+            document.getElementById('cartao-c').value = `${cartaoConf.nome}|${cartaoConf.titular}|${cartaoConf.diaVencimento || '10'}`;
+          }
+          document.getElementById('title-cartao').innerText = "Editar Gasto no Cartão";
+          document.getElementById('btn-c').innerHTML = '<i class="fa-solid fa-check me-2"></i>Atualizar no Cartão';
+
+          mostrarForm('cartao');
+        }
+      }
     }
 
     function cancelarEdicaoInline() {
