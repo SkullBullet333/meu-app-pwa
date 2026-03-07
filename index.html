@@ -3154,8 +3154,9 @@
       let tTitu = {};
 
       (configApp.titulares || []).forEach(t => {
-        pTit[t] = 0;
-        tTitu[t] = 0;
+        const nome = typeof t === 'object' ? t.nome : t;
+        pTit[nome] = 0;
+        tTitu[nome] = 0;
       });
 
       let tCrd = {
@@ -4267,7 +4268,10 @@
     }
 
     function atualizarSelectsDinamicos() {
-      const htmlTitulares = (configApp.titulares || []).map(t => `<option value="${t}">${t}</option>`).join('');
+      const htmlTitulares = (configApp.titulares || []).map(t => {
+        const nome = typeof t === 'object' ? t.nome : t;
+        return `<option value="${nome}">${nome}</option>`;
+      }).join('');
       document.querySelectorAll('.dynamic-titulares').forEach(sel => {
         if (sel) sel.innerHTML = htmlTitulares;
       });
