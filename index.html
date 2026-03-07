@@ -2478,6 +2478,35 @@
       <!-- ABA CONFIGURAÇÕES -->
       <div id="view-config" class="view">
         <div class="row g-4">
+          <!-- PREFERÊNCIAS E SISTEMA -->
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm p-4 h-100">
+              <h5 class="fw-bold mb-4"><i class="fa-solid fa-gear me-2 text-primary"></i>Preferências e Sistema</h5>
+
+              <div class="mb-4">
+                <div class="form-check form-switch p-0 d-flex align-items-center justify-content-between">
+                  <label class="form-check-label fw-bold" for="theme-checkbox" style="cursor: pointer;">Modo
+                    escuro</label>
+                  <input class="form-check-input" type="checkbox" id="theme-checkbox" onchange="toggleTheme()"
+                    style="width: 2.5em; height: 1.25em; cursor: pointer;">
+                </div>
+              </div>
+
+              <div class="d-flex flex-column gap-2">
+                <button
+                  class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                  onclick="carregar()">
+                  <i class="fa-solid fa-arrows-rotate"></i> Atualizar Dados
+                </button>
+                <button
+                  class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                  onclick="atualizarFaturaAtual()">
+                  <i class="fa-solid fa-credit-card"></i> Atualizar Cartões
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- TITULARES -->
           <div class="col-md-6">
             <div class="card border-0 shadow-sm p-4 h-100">
@@ -2497,31 +2526,6 @@
               <div id="content-titulares" class="hidden-content">
                 <ul class="list-group list-group-flush" id="lista-titulares-config"></ul>
               </div>
-            </div>
-          </div>
-
-          <!-- CATEGORIAS -->
-          <div class="col-md-6">
-            <div class="card border-0 shadow-sm p-4 h-100">
-              <h5 class="fw-bold mb-3 d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-tags me-2"></i>Categorias</span>
-                <i id="toggle-list-categorias" class="fa-solid fa-eye section-toggle-btn" title="Exibir/Ocultar"
-                  onclick="toggleSettingsList('lista-categorias-config', 'toggle-list-categorias')"></i>
-              </h5>
-              <div class="row g-2 mb-3">
-                <div class="col-6">
-                  <input type="text" id="novo-cat-nome" class="form-control" placeholder="Nome">
-                </div>
-                <div class="col-6">
-                  <input type="text" id="novo-cat-keywords" class="form-control" placeholder="Palavras-chave">
-                </div>
-                <div class="col-12 mt-2">
-                  <button class="btn btn-primary w-100"
-                    onclick="addConfig('categorias', ['novo-cat-nome', 'novo-cat-keywords'])">Adicionar
-                    Categoria</button>
-                </div>
-              </div>
-              <ul class="list-group list-group-flush hidden-content" id="lista-categorias-config"></ul>
             </div>
           </div>
 
@@ -2556,32 +2560,28 @@
             </div>
           </div>
 
-          <!-- PREFERÊNCIAS E SISTEMA -->
+          <!-- CATEGORIAS -->
           <div class="col-md-6">
             <div class="card border-0 shadow-sm p-4 h-100">
-              <h5 class="fw-bold mb-4"><i class="fa-solid fa-gear me-2 text-primary"></i>Preferências e Sistema</h5>
-
-              <div class="mb-4">
-                <div class="form-check form-switch p-0 d-flex align-items-center justify-content-between">
-                  <label class="form-check-label fw-bold" for="theme-checkbox" style="cursor: pointer;">Modo
-                    escuro</label>
-                  <input class="form-check-input" type="checkbox" id="theme-checkbox" onchange="toggleTheme()"
-                    style="width: 2.5em; height: 1.25em; cursor: pointer;">
+              <h5 class="fw-bold mb-3 d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-tags me-2"></i>Categorias</span>
+                <i id="toggle-list-categorias" class="fa-solid fa-eye section-toggle-btn" title="Exibir/Ocultar"
+                  onclick="toggleSettingsList('lista-categorias-config', 'toggle-list-categorias')"></i>
+              </h5>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <input type="text" id="novo-cat-nome" class="form-control" placeholder="Nome">
+                </div>
+                <div class="col-6">
+                  <input type="text" id="novo-cat-keywords" class="form-control" placeholder="Palavras-chave">
+                </div>
+                <div class="col-12 mt-2">
+                  <button class="btn btn-primary w-100"
+                    onclick="addConfig('categorias', ['novo-cat-nome', 'novo-cat-keywords'])">Adicionar
+                    Categoria</button>
                 </div>
               </div>
-
-              <div class="d-flex flex-column gap-2">
-                <button
-                  class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-                  onclick="carregar()">
-                  <i class="fa-solid fa-arrows-rotate"></i> Atualizar Dados
-                </button>
-                <button
-                  class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-                  onclick="atualizarFaturaAtual()">
-                  <i class="fa-solid fa-credit-card"></i> Atualizar Cartões
-                </button>
-              </div>
+              <ul class="list-group list-group-flush hidden-content" id="lista-categorias-config"></ul>
             </div>
           </div>
         </div>
