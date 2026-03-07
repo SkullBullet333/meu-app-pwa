@@ -1812,7 +1812,8 @@
       }
 
       /* Ajuste para 4 cards ocuparem largura total (25% cada) */
-      #container-cards-titular .col-5-custom {
+      #container-cards-titular .col-5-custom,
+      #container-cards-receita .col-5-custom {
         flex: 0 0 25% !important;
         max-width: 25% !important;
       }
@@ -3313,7 +3314,7 @@
 
       // Renderizar tabela conforme aba ativa (sempre mês atual)
       if (abaAtiva === 'receitas') {
-        thead.innerHTML = `<tr><th>Competência</th><th>Recebimento</th><th>Titular</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr>`;
+        thead.innerHTML = `<tr><th class="d-none d-md-table-cell">Competência</th><th>Recebimento</th><th class="d-none d-md-table-cell">Titular</th><th><span class="d-none d-md-inline">Descrição</span><span class="d-md-none">Descrição / Titular</span></th><th>Valor</th><th>Ações</th></tr>`;
         (dReceitas || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
           if (editingRowId === i.linha) {
             tbody.innerHTML += `<tr>
@@ -3339,10 +3340,10 @@
             }, 0);
           } else {
             tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
-              <td><span class="badge-comp">${i.competencia || ''}</span></td>
+              <td class="d-none d-md-table-cell"><span class="badge-comp">${i.competencia || ''}</span></td>
               <td>${i.recebimento || ''}</td>
-              <td>${i.titular || ''}</td>
-              <td>${i.descricao || ''}</td>
+              <td class="d-none d-md-table-cell">${i.titular || ''}</td>
+              <td><span class="d-none d-md-inline">${i.descricao || ''}</span><span class="d-md-none">${i.descricao || ''} ${i.titular || ''}</span></td>
               <td>${formatarMoeda(i.valor)}</td>
               <td>
                 <button class="btn-action" style="color:var(--danger)" onclick="excluirRec(${i.linha}); event.stopPropagation();" title="Excluir">
