@@ -3262,7 +3262,10 @@
             setTimeout(() => {
               const sel = document.getElementById('inline-titu-r');
               if (sel) {
-                sel.innerHTML = (configApp.titulares || []).map(t => `<option value="${t}">${t}</option>`).join('');
+                sel.innerHTML = (configApp.titulares || []).map(t => {
+                  const nome = typeof t === 'object' ? t.nome : t;
+                  return `<option value="${nome}">${nome}</option>`;
+                }).join('');
                 sel.value = i.titular || '';
               }
             }, 0);
@@ -3436,7 +3439,10 @@
       let tRec = 0, tPag = 0, tAbe = 0, tFat = 0;
       let pTit = {};
 
-      (configApp.titulares || []).forEach(t => { pTit[t] = 0; });
+      (configApp.titulares || []).forEach(t => {
+        const nome = typeof t === 'object' ? t.nome : t;
+        pTit[nome] = 0;
+      });
 
       (dReceitas || []).forEach(i => {
         if (i.competencia === compSelecionada) {
