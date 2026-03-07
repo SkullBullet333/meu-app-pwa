@@ -2561,7 +2561,7 @@
                 </div>
               </div>
 
-              <div class="d-flex flex-column gap-2">
+              <div class="d-flex flex-column gap-2 mb-4">
                 <button
                   class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
                   onclick="carregar()">
@@ -2572,6 +2572,30 @@
                   onclick="atualizarFaturaAtual()">
                   <i class="fa-solid fa-credit-card"></i> Atualizar Cartões
                 </button>
+              </div>
+
+              <h6 class="fw-bold text-muted small mb-3 text-uppercase">Limpeza de Dados</h6>
+              <div class="row g-2">
+                <div class="col-6">
+                  <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('simulacoes')">
+                    <i class="fa-solid fa-vial me-2"></i>Limpar Simulações
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('receitas')">
+                    <i class="fa-solid fa-hand-holding-dollar me-2"></i>Limpar Receitas
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('cartoes')">
+                    <i class="fa-solid fa-credit-card me-2"></i>Limpar Cartões
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button class="btn btn-outline-danger btn-sm w-100 py-2" onclick="confirmarLimpeza('despesas')">
+                    <i class="fa-solid fa-money-bill-transfer me-2"></i>Limpar Despesas
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4250,6 +4274,29 @@
       } finally {
         hideLoading();
       }
+    }
+
+    async function confirmarLimpeza(tipo) {
+      let msg = "";
+      let icon = "delete_sweep";
+
+      if (tipo === 'simulacoes') msg = "Deseja APAGAR TODAS as simulações do sistema?";
+      else if (tipo === 'receitas') msg = "Deseja APAGAR TODAS as receitas lançadas?";
+      else if (tipo === 'cartoes') msg = "Deseja APAGAR TODOS os gastos de cartão?";
+      else if (tipo === 'despesas') msg = "Deseja APAGAR TODAS as despesas fixas/variáveis?";
+
+      showActionModal(msg, async function () {
+        showLoading();
+        try {
+          await callAppsScript('limparDados', { tipo });
+          showToast('Dados limpos com sucesso!', 'success');
+          await carregar();
+        } catch (error) {
+          showToast('Erro ao limpar dados: ' + error.message, 'danger');
+        } finally {
+          hideLoading();
+        }
+      }, icon);
     }
 
     async function atualizarFaturaAtual() {
