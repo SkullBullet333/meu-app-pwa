@@ -2372,56 +2372,49 @@
             </div>
           </div>
         </div>
-        2375:
-        2376: <div id="container-cards-receitas-titular" style="display:none;" class="row-5">
-          2377: <div class="col-5-custom">
-            2378: <div class="card p-3 shadow-sm" style="border-left: 5px solid var(--success);">
-              2379: <div class="d-flex align-items-center justify-content-start gap-2">
-                2380: <i class="fa-solid fa-sack-dollar text-success"
-                  style="font-size: 2.5rem; width: 60px; text-align: center;"></i>
-                2381: <div>
-                  2382: <small class="text-muted d-block">
-                    2383: <span class="d-none d-md-inline">Total Receitas</span>
-                    2384: <span class="d-inline d-md-none">Receitas</span>
-                    2385: </small>
-                  2386: <strong id="total-receitas-mes" class="text-success">R$ 0</strong>
-                  2387: </div>
-                2388: </div>
-              2389: </div>
-            2390: </div>
-          2391: <div class="col-5-custom">
-            2392: <div class="card p-3 card-click shadow-sm card-segmento-filtro"
-              onclick="filtrarTitularRapido('Casa')">
-              2393: <div class="d-flex align-items-center justify-content-start gap-2"><img 2394:
-                  src="https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png" class="img-c">
-                2395: <div><small class="text-muted d-block">Casa</small><strong id="total-rec-titu-casa">R$ 0</strong>
+
+        <!-- CARDS RESUMO RECEITAS -->
+        <div id="container-cards-receita" style="display:none;" class="row-5">
+          <div class="col-5-custom">
+            <div class="card p-3 shadow-sm" style="border-left: 5px solid var(--success);">
+              <div class="d-flex align-items-center justify-content-start gap-2">
+                <i class="fa-solid fa-sack-dollar text-success"
+                  style="font-size: 2rem; width: 45px; text-align: center;"></i>
+                <div>
+                  <small class="text-muted d-block">Total Receitas</small>
+                  <strong id="total-receitas-aba" class="text-success">R$ 0</strong>
                 </div>
-                2396: </div>
-              2397: </div>
-            2398: </div>
-          2399: <div class="col-5-custom">
-            2400: <div class="card p-3 card-click shadow-sm card-segmento-filtro"
-              onclick="filtrarTitularRapido('Noádia')">
-              2401: <div class="d-flex align-items-center justify-content-start gap-2"><img 2402:
-                  src="https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png"
-                  2403: class="img-c">
-                2404: <div><small class="text-muted d-block">Noádia</small><strong id="total-rec-titu-noadia">R$
-                    0</strong></div>
-                2405: </div>
-              2406: </div>
-            2407: </div>
-          2408: <div class="col-5-custom">
-            2409: <div class="card p-3 card-click shadow-sm card-segmento-filtro"
-              onclick="filtrarTitularRapido('Pablo')">
-              2410: <div class="d-flex align-items-center justify-content-start gap-2"><img 2411:
+              </div>
+            </div>
+          </div>
+          <div class="col-5-custom">
+            <div class="card p-3 card-click shadow-sm card-segmento-filtro" onclick="filtrarTitularRapido('Casa')">
+              <div class="d-flex align-items-center justify-content-start gap-2">
+                <img src="https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png" class="img-c">
+                <div><small class="text-muted d-block">Casa</small><strong id="total-rec-casa">R$ 0</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-5-custom">
+            <div class="card p-3 card-click shadow-sm card-segmento-filtro" onclick="filtrarTitularRapido('Noádia')">
+              <div class="d-flex align-items-center justify-content-start gap-2">
+                <img src="https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png"
+                  class="img-c">
+                <div><small class="text-muted d-block">Noádia</small><strong id="total-rec-noadia">R$ 0</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-5-custom">
+            <div class="card p-3 card-click shadow-sm card-segmento-filtro" onclick="filtrarTitularRapido('Pablo')">
+              <div class="d-flex align-items-center justify-content-start gap-2">
+                <img
                   src="https://images.icon-icons.com/2643/PNG/512/male_man_people_person_avatar_white_tone_icon_159363.png"
-                  2412: class="img-c">
-                2413: <div><small class="text-muted d-block">Pablo</small><strong id="total-rec-titu-pablo">R$
-                    0</strong></div>
-                2414: </div>
-              2415: </div>
-            2416: </div>
-          2417: </div>
+                  class="img-c">
+                <div><small class="text-muted d-block">Pablo</small><strong id="total-rec-pablo">R$ 0</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div id="container-cards-cartao" style="display:none;" class="row-5">
           <!-- Os cards originais permanecem aqui para o PC -->
@@ -3276,6 +3269,27 @@
       setV('total-titu-pablo', tTitu["Pablo"]);
       setV('total-titu-casa', tTitu["Casa"]);
 
+      // Cálculos específicos para Receitas (Aba de Receitas)
+      let tRecTotal = 0;
+      let tRecTitu = {};
+      (configApp.titulares || []).forEach(t => {
+        const nome = typeof t === 'object' ? t.nome : t;
+        tRecTitu[nome] = 0;
+      });
+
+      (dReceitas || []).forEach(i => {
+        if (i.competencia === compSelecionada) {
+          const v = Number(i.valor || 0);
+          tRecTotal += v;
+          if (tRecTitu.hasOwnProperty(i.titular)) tRecTitu[i.titular] += v;
+        }
+      });
+
+      setV('total-receitas-aba', tRecTotal);
+      setV('total-rec-noadia', tRecTitu["Noádia"]);
+      setV('total-rec-pablo', tRecTitu["Pablo"]);
+      setV('total-rec-casa', tRecTitu["Casa"]);
+
       // Atualizar fotos dos titulares dinamicamente nos cards
       (configApp.titulares || []).forEach(t => {
         const nome = typeof t === 'object' ? t.nome : t;
@@ -3285,31 +3299,6 @@
           if (imgEl) imgEl.src = foto;
         }
       });
-
-      // --- CÁLCULO DE RECEITAS POR TITULAR PARA O MÊS SELECIONADO ---
-      let tRecMes = 0;
-      let tRecTitu = {};
-      (configApp.titulares || []).forEach(t => {
-        const nome = typeof t === 'object' ? t.nome : t;
-        tRecTitu[nome] = 0;
-      });
-
-      const mesIsoPrefix = `${currentYear}-${("0" + currentMonth).slice(-2)}`;
-
-      (dReceitas || []).forEach(i => {
-        if (i.recebimentoIso && i.recebimentoIso.startsWith(mesIsoPrefix)) {
-          const v = Number(i.valor || 0);
-          tRecMes += v;
-          if (tRecTitu.hasOwnProperty(i.titular)) {
-            tRecTitu[i.titular] += v;
-          }
-        }
-      });
-
-      setV('total-receitas-mes', tRecMes);
-      setV('total-rec-titu-noadia', tRecTitu["Noádia"]);
-      setV('total-rec-titu-pablo', tRecTitu["Pablo"]);
-      setV('total-rec-titu-casa', tRecTitu["Casa"]);
 
       // Atualizar área de detalhe mobile se estiver na aba cartões
       if (abaAtiva === 'cartoes') {
@@ -3321,11 +3310,12 @@
 
       // Renderizar tabela conforme aba ativa (sempre mês atual)
       if (abaAtiva === 'receitas') {
-        thead.innerHTML = `<tr><th>Recebimento</th><th>Titular</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr>`;
-        (dReceitas || []).filter(i => (i.recebimentoIso || '').startsWith(mesIsoPrefix) && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
+        thead.innerHTML = `<tr><th>Competência</th><th>Recebimento</th><th>Titular</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr>`;
+        (dReceitas || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
           if (editingRowId === i.linha) {
             tbody.innerHTML += `<tr>
-              <td><input type="date" id="inline-data-r" class="form-control form-control-sm" value="${i.recebimentoIso || ''}"></td>
+              <td><span class="badge-comp">${i.competencia || ''}</span></td>
+              <td>${i.recebimento || ''}</td>
               <td><select id="inline-titu-r" class="form-select form-select-sm dynamic-titulares"></select></td>
               <td><input id="inline-desc-r" class="form-control form-control-sm" value="${i.descricao || ''}" onkeydown="if(event.key==='Enter') salvarInlineReceita(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
               <td><input id="inline-val-r" class="form-control form-control-sm" type="number" step="0.01" value="${i.valor || ''}" onkeydown="if(event.key==='Enter') salvarInlineReceita(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
@@ -3346,6 +3336,7 @@
             }, 0);
           } else {
             tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
+              <td><span class="badge-comp">${i.competencia || ''}</span></td>
               <td>${i.recebimento || ''}</td>
               <td>${i.titular || ''}</td>
               <td>${i.descricao || ''}</td>
@@ -3519,10 +3510,8 @@
         pTit[nome] = 0;
       });
 
-      const mesIsoPrefix = `${currentYear}-${("0" + currentMonth).slice(-2)}`;
-
       (dReceitas || []).forEach(i => {
-        if ((i.recebimentoIso || '').startsWith(mesIsoPrefix)) {
+        if (i.competencia === compSelecionada) {
           tRec += Number(i.valor || 0);
         }
       });
@@ -3674,11 +3663,7 @@
 
       head.innerHTML = `<tr><th>Tipo</th>${meses.map(m => `<th>${m}</th>`).join('')}</tr>`;
 
-      let recs = meses.map(m => {
-        const [mm, aa] = m.split('/');
-        const prefix = `${aa}-${mm}`;
-        return (dReceitas || []).filter(i => (i.recebimentoIso || '').startsWith(prefix)).reduce((a, b) => a + Number(b.valor || 0), 0);
-      });
+      let recs = meses.map(m => (dReceitas || []).filter(i => i.competencia === m).reduce((a, b) => a + Number(b.valor || 0), 0));
       let desps = meses.map(m => (dGeral || []).filter(i => i.competencia === m).reduce((a, b) => a + Number(b.valor || 0), 0));
 
       body.innerHTML = `
@@ -3696,10 +3681,7 @@
       const compSelecionada = ("0" + currentMonth).slice(-2) + "/" + currentYear;
 
       let tRec = 0;
-      const mesIsoPrefix = `${currentYear}-${("0" + currentMonth).slice(-2)}`;
-      (dReceitas || []).forEach(i => {
-        if ((i.recebimentoIso || '').startsWith(mesIsoPrefix)) tRec += Number(i.valor || 0);
-      });
+      (dReceitas || []).forEach(i => { if (i.competencia === compSelecionada) tRec += Number(i.valor || 0); });
 
       let despEssencial = 0;
       let despEstiloVida = 0;
@@ -3832,11 +3814,11 @@
 
       const contTitular = document.getElementById('container-cards-titular');
       const contCartao = document.getElementById('container-cards-cartao');
-      const contRecTitu = document.getElementById('container-cards-receitas-titular');
+      const contReceita = document.getElementById('container-cards-receita');
 
       if (contTitular) contTitular.style.display = (aba === 'geral') ? 'flex' : 'none';
       if (contCartao) contCartao.style.display = (aba === 'cartoes') ? 'flex' : 'none';
-      if (contRecTitu) contRecTitu.style.display = (aba === 'receitas') ? 'flex' : 'none';
+      if (contReceita) contReceita.style.display = (aba === 'receitas') ? 'flex' : 'none';
 
       // Esconder detalhe mobile se não for aba cartões
       const detMob = document.getElementById('mobile-cartao-detalhe');
@@ -4059,7 +4041,12 @@
       const descricao = document.getElementById('inline-desc-r').value;
       const valor = document.getElementById('inline-val-r').value;
       const titular = document.getElementById('inline-titu-r').value;
-      const recebimento = document.getElementById('inline-data-r').value;
+      const mesAtual = ("0" + currentMonth).slice(-2);
+      const anoAtual = currentYear;
+
+      const itemOriginal = (dReceitas || []).find(x => x.linha === linha);
+      const dia = itemOriginal && itemOriginal.vencimento ? itemOriginal.vencimento.split('/')[0] : "05";
+      const recebimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
 
       if (!descricao || !valor || !titular) {
         showToast('Preencha os campos obrigatorios!', 'warning');
