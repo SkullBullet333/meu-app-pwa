@@ -4202,9 +4202,10 @@
     async function carregarConfigs() {
       try {
         const res = await callAppsScript('buscarConfigs');
-        configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
+        configApp = res || { titulares: [], cartoes: [], categorias: [] };
         renderizarConfigScreen();
         atualizarSelectsDinamicos();
+        atualizarSidebarUsuario(); // Garante que o sidebar use as fotos recém-carregadas
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
       }
@@ -4662,20 +4663,19 @@
 
       if (!user || !nameEl) return;
 
-      // Mapeamento de Fotos (Prioriza configuração vinda do Banco)
-      const fotosPadrao = {
-        'noádia': 'https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png',
-        'pablo': 'https://images.icon-icons.com/2643/PNG/512/male_man_people_person_avatar_white_tone_icon_159363.png',
-        'casa': 'https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png'
-      };
-
       const userKey = String(user || '').trim().toLowerCase();
-      const capitalizedUser = userKey.charAt(0).toUpperCase() + userKey.slice(1);
-      nameEl.innerText = `Olá, ${capitalizedUser}!`;
 
-      // Tentar achar foto personalizada no configApp
-      const titularDinamico = (configApp.titulares || []).find(t => (typeof t === 'object' ? t.nome : t).toLowerCase() === userKey);
-      const fotoFinal = (titularDinamico && titularDinamico.foto) ? titularDinamico.foto : fotosPadrao[userKey];
+      // Tentar achar os dados no configApp (que vêm da aba LOGIN agora)
+      const dadosTitular = (configApp.titulares || []).find(t =>
+        (typeof t === 'object' ? t.nome : t).toLowerCase() === userKey
+      );
+
+      // Nome: Se achar no banco, usa o nome do banco. Se não, capitaliza o login.
+      const nomeExibicao = dadosTitular ? dadosTitular.nome : (userKey.charAt(0).toUpperCase() + userKey.slice(1));
+      nameEl.innerText = `Olá, ${nomeExibicao}!`;
+
+      // Foto: Se achar foto no banco, usa ela.
+      const fotoFinal = (dadosTitular && dadosTitular.foto) ? dadosTitular.foto : null;
 
       if (fotoFinal) {
         if (photoEl) {
@@ -4684,8 +4684,23 @@
         }
         if (iconEl) iconEl.style.display = 'none';
       } else {
-        if (photoEl) photoEl.style.display = 'none';
-        if (iconEl) iconEl.style.display = 'block';
+        // Se não tiver foto no banco, tenta os placeholders antigos apenas para Noádia/Pablo/Casa
+        const placeholders = {
+          'noádia': 'https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png',
+          'pablo': 'https://images.icon-icons.com/2643/PNG/512/male_man_people_person_avatar_white_tone_icon_159363.png',
+          'casa': 'https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png'
+        };
+        const placeholder = placeholders[userKey];
+        if (placeholder) {
+          if (photoEl) {
+            photoEl.src = placeholder;
+            photoEl.style.display = 'block';
+          }
+          if (iconEl) iconEl.style.display = 'none';
+        } else {
+          if (photoEl) photoEl.style.display = 'none';
+          if (iconEl) iconEl.style.display = 'block';
+        }
       }
     }
   </script>
