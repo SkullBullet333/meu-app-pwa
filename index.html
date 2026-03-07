@@ -2490,6 +2490,10 @@
                 <input type="text" id="novo-titular" class="form-control" placeholder="Nome do Titular">
                 <button class="btn btn-primary" onclick="addConfig('titulares', 'novo-titular')">Adicionar</button>
               </div>
+              <!-- Input oculto para Upload -->
+              <input type="file" id="upload-titular-foto" accept="image/*" style="display:none"
+                onchange="processarUploadFoto(event)">
+
               <div id="content-titulares" class="hidden-content">
                 <ul class="list-group list-group-flush" id="lista-titulares-config"></ul>
               </div>
@@ -3220,6 +3224,16 @@
       setV('total-titu-noadia', tTitu["Noádia"]);
       setV('total-titu-pablo', tTitu["Pablo"]);
       setV('total-titu-casa', tTitu["Casa"]);
+
+      // Atualizar fotos dos titulares dinamicamente nos cards
+      (configApp.titulares || []).forEach(t => {
+        const nome = typeof t === 'object' ? t.nome : t;
+        const foto = typeof t === 'object' ? (t.foto || "") : "";
+        if (foto) {
+          const imgEl = document.querySelector(`.card-segmento-filtro[onclick*="'${nome}'"] img`);
+          if (imgEl) imgEl.src = foto;
+        }
+      });
 
       // Atualizar área de detalhe mobile se estiver na aba cartões
       if (abaAtiva === 'cartoes') {
@@ -4195,14 +4209,30 @@
 
       if (!listaT || !listaC) return;
 
-      listaT.innerHTML = (configApp.titulares || []).map((t, index) => `
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          ${t}
-          <button class="btn-remove-config" onclick="deleteConfig('titulares', '${t}')">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        </li>
-      `).join('');
+      listaT.innerHTML = (configApp.titulares || []).map((t, index) => {
+        const nome = typeof t === 'object' ? t.nome : t;
+        const foto = typeof t === 'object' ? t.foto : '';
+        const imgHtml = foto
+          ? `<img src="${foto}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; margin-right:10px;">`
+          : `<i class="fa-solid fa-user-circle me-2 text-muted" style="font-size:1.5rem"></i>`;
+
+        return `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              ${imgHtml}
+              <span>${nome}</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-primary" onclick="triggerUploadFoto('${nome}')" title="Alterar Foto">
+                <i class="fa-solid fa-camera"></i>
+              </button>
+              <button class="btn-remove-config" onclick="deleteConfig('titulares', '${nome}')">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </li>
+        `;
+      }).join('');
 
       listaC.innerHTML = (configApp.cartoes || []).map(c => {
         const valorUnico = `${c.nome}|${c.titular}`;
@@ -4299,6 +4329,75 @@
           hideLoading();
         }
       }, 'delete');
+    }
+
+    let titularParaUpload = "";
+
+    function triggerUploadFoto(nome) {
+      titularParaUpload = nome;
+      document.getElementById('upload-titular-foto').click();
+    }
+
+    async function processarUploadFoto(event) {
+      const file = event.target.files[0];
+      if (!file || !titularParaUpload) return;
+
+      showLoading();
+      try {
+        const base64 = await comprimirEConverterBase64(file);
+        const res = await callAppsScript('salvarConfigItem', {
+          tipo: 'titulares',
+          valor: { nome: titularParaUpload, foto: base64 }
+        });
+
+        configApp = res;
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+        atualizarSidebarUsuario();
+        renderizarTabelaEAnalise(); // Atualiza cards de titulares
+
+        showToast("Foto atualizada com sucesso!", "success");
+      } catch (error) {
+        showToast("Erro no upload: " + error.message, "danger");
+      } finally {
+        hideLoading();
+        event.target.value = ""; // Limpa input
+      }
+    }
+
+    function comprimirEConverterBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 120; // Tamanho compacto para Sheets
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7)); // JPEG 70% para economia extrema
+          };
+        };
+        reader.onerror = error => reject(error);
+      });
     }
 
     async function addConfig(tipo, idInput) {
@@ -4553,8 +4652,8 @@
 
       if (!user || !nameEl) return;
 
-      // Mapeamento de Fotos (Backend retorna tudo em minúsculo)
-      const fotos = {
+      // Mapeamento de Fotos (Prioriza configuração vinda do Banco)
+      const fotosPadrao = {
         'noádia': 'https://images.icon-icons.com/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png',
         'pablo': 'https://images.icon-icons.com/2643/PNG/512/male_man_people_person_avatar_white_tone_icon_159363.png',
         'casa': 'https://images.icon-icons.com/1483/PNG/512/wifihome_102155.png'
@@ -4564,9 +4663,13 @@
       const capitalizedUser = userKey.charAt(0).toUpperCase() + userKey.slice(1);
       nameEl.innerText = `Olá, ${capitalizedUser}!`;
 
-      if (fotos[userKey]) {
+      // Tentar achar foto personalizada no configApp
+      const titularDinamico = (configApp.titulares || []).find(t => (typeof t === 'object' ? t.nome : t).toLowerCase() === userKey);
+      const fotoFinal = (titularDinamico && titularDinamico.foto) ? titularDinamico.foto : fotosPadrao[userKey];
+
+      if (fotoFinal) {
         if (photoEl) {
-          photoEl.src = fotos[userKey];
+          photoEl.src = fotoFinal;
           photoEl.style.display = 'block';
         }
         if (iconEl) iconEl.style.display = 'none';
