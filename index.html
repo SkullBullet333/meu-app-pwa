@@ -143,11 +143,17 @@
     }
 
     .sidebar-user-img {
-      width: 32px;
-      height: 32px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid var(--primary);
+      margin-left: -5px;
+    }
+
+    #sidebar-user-name {
+      font-size: 1.2rem !important;
+      font-weight: 700 !important;
     }
 
     body.dark-mode .date-display {
@@ -4555,7 +4561,8 @@
       };
 
       const userKey = String(user || '').trim().toLowerCase();
-      nameEl.innerText = user;
+      const capitalizedUser = userKey.charAt(0).toUpperCase() + userKey.slice(1);
+      nameEl.innerText = `Olá, ${capitalizedUser}!`;
 
       if (fotos[userKey]) {
         if (photoEl) {
