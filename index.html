@@ -2799,6 +2799,8 @@
     let confirmDeleteCallback = null;
     let editingRowId = null;
     let editingRow = null; // Mantendo por compatibilidade se necessário, mas focando em editingRowId
+    let editingConfigType = null;
+    let editingConfigLine = null;
     let anoModalAtivo = currentYear;
 
     // URL da API do Google Apps Script
@@ -4447,21 +4449,90 @@
       }
     }
 
+    function abrirEdicaoConfig(tipo, linha) {
+      editingConfigType = tipo;
+      editingConfigLine = linha;
+      renderizarConfigScreen();
+    }
+
+    function cancelarEdicaoConfig() {
+      editingConfigType = null;
+      editingConfigLine = null;
+      renderizarConfigScreen();
+    }
+
+    async function salvarEdicaoConfig(tipo, linha) {
+      let novosDados;
+      if (tipo === 'titulares') {
+        novosDados = {
+          nome: document.getElementById('edit-config-nome').value,
+          foto: document.getElementById('edit-config-foto').value // Mantém o valor atual se não houver campo de edição de foto aqui
+        };
+      } else if (tipo === 'cartoes') {
+        novosDados = [
+          document.getElementById('edit-config-cartao-nome').value,
+          document.getElementById('edit-config-cartao-titu').value,
+          document.getElementById('edit-config-cartao-venc').value,
+          document.getElementById('edit-config-cartao-fech').value
+        ];
+      } else if (tipo === 'categorias') {
+        novosDados = [
+          document.getElementById('edit-config-cat-label').value,
+          document.getElementById('edit-config-cat-keywords').value
+        ];
+      }
+
+      showLoading();
+      try {
+        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor: novosDados });
+        configApp = res;
+        editingConfigType = null;
+        editingConfigLine = null;
+        renderizarConfigScreen();
+        atualizarSelectsDinamicos();
+        showToast("Configuração atualizada!", "success");
+      } catch (error) {
+        showToast("Erro ao editar: " + error.message, "danger");
+      } finally {
+        hideLoading();
+      }
+    }
+
     function renderizarConfigScreen() {
       const listaT = document.getElementById('lista-titulares-config');
       const listaC = document.getElementById('lista-cartoes-config');
+      const listaCat = document.getElementById('lista-categorias-config');
 
       if (!listaT || !listaC) return;
 
+      // 1. TITULARES
       listaT.innerHTML = (configApp.titulares || []).map((t, index) => {
         const nome = typeof t === 'object' ? t.nome : t;
         const foto = typeof t === 'object' ? t.foto : '';
+        const linha = index + 2; // LOGIN sheet typically has header, so line 2 is first data
+
+        if (editingConfigType === 'titulares' && editingConfigLine === linha) {
+          return `
+            <li class="list-group-item editing-row">
+              <div class="d-flex align-items-center gap-2 w-100">
+                <input type="text" id="edit-config-nome" class="form-control form-control-sm" value="${nome}">
+                <input type="hidden" id="edit-config-foto" value="${foto}">
+                <div class="inline-edit-actions">
+                  <button class="inline-save-btn" onclick="salvarEdicaoConfig('titulares', ${linha})"><i class="fa-solid fa-check"></i></button>
+                  <button class="inline-cancel-btn" onclick="cancelarEdicaoConfig()"><i class="fa-solid fa-times"></i></button>
+                </div>
+              </div>
+            </li>
+          `;
+        }
+
         const imgHtml = foto
           ? `<img src="${foto}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; margin-right:10px;">`
           : `<i class="fa-solid fa-user-circle me-2 text-muted" style="font-size:1.5rem"></i>`;
 
         return `
-          <li class="list-group-item d-flex justify-content-between align-items-center">
+          <li class="list-group-item d-flex justify-content-between align-items-center" 
+              ondblclick="abrirEdicaoConfig('titulares', ${linha})" title="Clique duplo para editar">
             <div class="d-flex align-items-center">
               ${imgHtml}
               <span>${nome}</span>
@@ -4478,10 +4549,44 @@
         `;
       }).join('');
 
+      // 2. CARTÕES
       listaC.innerHTML = (configApp.cartoes || []).map(c => {
         const valorUnico = `${c.nome}|${c.titular}`;
+        const linha = c.linha;
+
+        if (editingConfigType === 'cartoes' && editingConfigLine === linha) {
+          const htmlTitulares = (configApp.titulares || []).map(t => {
+            const n = typeof t === 'object' ? t.nome : t;
+            return `<option value="${n}" ${n === c.titular ? 'selected' : ''}>${n}</option>`;
+          }).join('');
+
+          return `
+            <li class="list-group-item editing-row">
+              <div class="row g-2 w-100 align-items-center">
+                <div class="col-4">
+                  <input type="text" id="edit-config-cartao-nome" class="form-control form-control-sm" value="${c.nome}">
+                </div>
+                <div class="col-4">
+                  <select id="edit-config-cartao-titu" class="form-select form-select-sm">${htmlTitulares}</select>
+                </div>
+                <div class="col-2">
+                  <input type="number" id="edit-config-cartao-venc" class="form-control form-control-sm" value="${c.diaVencimento}">
+                </div>
+                <div class="col-2">
+                  <input type="number" id="edit-config-cartao-fech" class="form-control form-control-sm" value="${c.diaFechamento}">
+                </div>
+                <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                  <button class="inline-save-btn" onclick="salvarEdicaoConfig('cartoes', ${linha})"><i class="fa-solid fa-check"></i></button>
+                  <button class="inline-cancel-btn" onclick="cancelarEdicaoConfig()"><i class="fa-solid fa-times"></i></button>
+                </div>
+              </div>
+            </li>
+          `;
+        }
+
         return `
-          <li class="list-group-item d-flex justify-content-between align-items-center">
+          <li class="list-group-item d-flex justify-content-between align-items-center" 
+              ondblclick="abrirEdicaoConfig('cartoes', ${linha})" title="Clique duplo para editar">
             <div>
               <strong>${c.nome || ''}</strong> 
               <small class="text-muted">(${c.titular || ''})</small>
@@ -4495,19 +4600,43 @@
         `;
       }).join('');
 
-      const listaCat = document.getElementById('lista-categorias-config');
+      // 3. CATEGORIAS
       if (listaCat) {
-        listaCat.innerHTML = (configApp.categorias || []).map(cat => `
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div style="flex:1">
-              <strong>${cat.label}</strong>
-              <div class="text-muted small">${cat.keywords || 'Sem palavras-chave'}</div>
-            </div>
-            <button class="btn-remove-config" onclick="deleteConfig('categorias', ${cat.linha})">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </li>
-        `).join('');
+        listaCat.innerHTML = (configApp.categorias || []).map(cat => {
+          const linha = cat.linha;
+
+          if (editingConfigType === 'categorias' && editingConfigLine === linha) {
+            return `
+              <li class="list-group-item editing-row">
+                <div class="row g-2 w-100 align-items-center">
+                  <div class="col-5">
+                    <input type="text" id="edit-config-cat-label" class="form-control form-control-sm" value="${cat.label}">
+                  </div>
+                  <div class="col-5">
+                    <input type="text" id="edit-config-cat-keywords" class="form-control form-control-sm" value="${cat.keywords}">
+                  </div>
+                  <div class="col-2 d-flex gap-2">
+                    <button class="inline-save-btn" onclick="salvarEdicaoConfig('categorias', ${linha})"><i class="fa-solid fa-check"></i></button>
+                    <button class="inline-cancel-btn" onclick="cancelarEdicaoConfig()"><i class="fa-solid fa-times"></i></button>
+                  </div>
+                </div>
+              </li>
+            `;
+          }
+
+          return `
+            <li class="list-group-item d-flex justify-content-between align-items-center" 
+                ondblclick="abrirEdicaoConfig('categorias', ${linha})" title="Clique duplo para editar">
+              <div style="flex:1">
+                <strong>${cat.label}</strong>
+                <div class="text-muted small">${cat.keywords || 'Sem palavras-chave'}</div>
+              </div>
+              <button class="btn-remove-config" onclick="deleteConfig('categorias', ${cat.linha})">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </li>
+          `;
+        }).join('');
       }
     }
 
@@ -4888,6 +5017,9 @@
     window.deleteConfig = deleteConfig;
     window.addConfig = addConfig;
     window.renderizarConfigScreen = renderizarConfigScreen;
+    window.abrirEdicaoConfig = abrirEdicaoConfig;
+    window.salvarEdicaoConfig = salvarEdicaoConfig;
+    window.cancelarEdicaoConfig = cancelarEdicaoConfig;
     window.atualizarSelectsDinamicos = atualizarSelectsDinamicos;
     window.realizarLogin = realizarLogin;
     window.logout = logout;
