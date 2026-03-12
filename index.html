@@ -2801,6 +2801,7 @@
     let editingRow = null; // Mantendo por compatibilidade se necessário, mas focando em editingRowId
     let editingConfigType = null;
     let editingConfigLine = null;
+    let firstLoad = true;
     let anoModalAtivo = currentYear;
 
     // URL da API do Google Apps Script
@@ -3124,6 +3125,32 @@
         dReceitas = data.receitas || [];
         dGeral = data.geral || [];
         dCartoes = data.cartoes || [];
+
+        // Regra de abertura automática no mês seguinte
+        if (firstLoad) {
+          firstLoad = false;
+          const realDate = new Date();
+          const realComp = ("0" + (realDate.getMonth() + 1)).slice(-2) + "/" + realDate.getFullYear();
+          const currComp = ("0" + currentMonth).slice(-2) + "/" + currentYear;
+
+          // Só executa se estivermos olhando para a competência atual "real"
+          if (currComp === realComp) {
+            const despesasMes = dGeral.filter(i => i.competencia === realComp);
+            // Se houver despesas e todas estiverem pagas, pula para o mês seguinte
+            if (despesasMes.length > 0 && despesasMes.every(i => i.status === 'Pago')) {
+              if (currentMonth === 12) {
+                currentMonth = 1;
+                currentYear++;
+              } else {
+                currentMonth++;
+              }
+              localStorage.setItem('currentMonth', currentMonth);
+              localStorage.setItem('currentYear', currentYear);
+              updateDateDisplay();
+              return carregar(); // Recarrega com o novo mês
+            }
+          }
+        }
 
         const notesArea = document.getElementById('dashboard-notes');
         if (notesArea) notesArea.value = data.notaDashboard || "";
@@ -4455,6 +4482,14 @@
       renderizarConfigScreen();
     }
 
+    function handleConfigKey(event, tipo, linha) {
+      if (event.key === 'Enter') {
+        salvarEdicaoConfig(tipo, linha);
+      } else if (event.key === 'Escape') {
+        cancelarEdicaoConfig();
+      }
+    }
+
     function cancelarEdicaoConfig() {
       editingConfigType = null;
       editingConfigLine = null;
@@ -4515,7 +4550,8 @@
           return `
             <li class="list-group-item editing-row">
               <div class="d-flex align-items-center gap-2 w-100">
-                <input type="text" id="edit-config-nome" class="form-control form-control-sm" value="${nome}">
+                <input type="text" id="edit-config-nome" class="form-control form-control-sm" value="${nome}" 
+                       onkeydown="handleConfigKey(event, 'titulares', ${linha})">
                 <input type="hidden" id="edit-config-foto" value="${foto}">
                 <div class="inline-edit-actions">
                   <button class="inline-save-btn" onclick="salvarEdicaoConfig('titulares', ${linha})"><i class="fa-solid fa-check"></i></button>
@@ -4564,16 +4600,20 @@
             <li class="list-group-item editing-row">
               <div class="row g-2 w-100 align-items-center">
                 <div class="col-4">
-                  <input type="text" id="edit-config-cartao-nome" class="form-control form-control-sm" value="${c.nome}">
+                  <input type="text" id="edit-config-cartao-nome" class="form-control form-control-sm" value="${c.nome}"
+                         onkeydown="handleConfigKey(event, 'cartoes', ${linha})">
                 </div>
                 <div class="col-4">
-                  <select id="edit-config-cartao-titu" class="form-select form-select-sm">${htmlTitulares}</select>
+                  <select id="edit-config-cartao-titu" class="form-select form-select-sm"
+                          onkeydown="handleConfigKey(event, 'cartoes', ${linha})">${htmlTitulares}</select>
                 </div>
                 <div class="col-2">
-                  <input type="number" id="edit-config-cartao-venc" class="form-control form-control-sm" value="${c.diaVencimento}">
+                  <input type="number" id="edit-config-cartao-venc" class="form-control form-control-sm" value="${c.diaVencimento}"
+                         onkeydown="handleConfigKey(event, 'cartoes', ${linha})">
                 </div>
                 <div class="col-2">
-                  <input type="number" id="edit-config-cartao-fech" class="form-control form-control-sm" value="${c.diaFechamento}">
+                  <input type="number" id="edit-config-cartao-fech" class="form-control form-control-sm" value="${c.diaFechamento}"
+                         onkeydown="handleConfigKey(event, 'cartoes', ${linha})">
                 </div>
                 <div class="col-12 d-flex justify-content-end gap-2 mt-2">
                   <button class="inline-save-btn" onclick="salvarEdicaoConfig('cartoes', ${linha})"><i class="fa-solid fa-check"></i></button>
@@ -4610,10 +4650,12 @@
               <li class="list-group-item editing-row">
                 <div class="row g-2 w-100 align-items-center">
                   <div class="col-5">
-                    <input type="text" id="edit-config-cat-label" class="form-control form-control-sm" value="${cat.label}">
+                    <input type="text" id="edit-config-cat-label" class="form-control form-control-sm" value="${cat.label}"
+                           onkeydown="handleConfigKey(event, 'categorias', ${linha})">
                   </div>
                   <div class="col-5">
-                    <input type="text" id="edit-config-cat-keywords" class="form-control form-control-sm" value="${cat.keywords}">
+                    <input type="text" id="edit-config-cat-keywords" class="form-control form-control-sm" value="${cat.keywords}"
+                           onkeydown="handleConfigKey(event, 'categorias', ${linha})">
                   </div>
                   <div class="col-2 d-flex gap-2">
                     <button class="inline-save-btn" onclick="salvarEdicaoConfig('categorias', ${linha})"><i class="fa-solid fa-check"></i></button>
