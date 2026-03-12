@@ -2801,7 +2801,6 @@
     let editingRow = null; // Mantendo por compatibilidade se necessário, mas focando em editingRowId
     let editingConfigType = null;
     let editingConfigLine = null;
-    let firstLoad = true;
     let anoModalAtivo = currentYear;
 
     // URL da API do Google Apps Script
@@ -3125,32 +3124,6 @@
         dReceitas = data.receitas || [];
         dGeral = data.geral || [];
         dCartoes = data.cartoes || [];
-
-        // Regra de abertura automática no mês seguinte
-        if (firstLoad) {
-          firstLoad = false;
-          const realDate = new Date();
-          const realComp = ("0" + (realDate.getMonth() + 1)).slice(-2) + "/" + realDate.getFullYear();
-          const currComp = ("0" + currentMonth).slice(-2) + "/" + currentYear;
-
-          // Só executa se estivermos olhando para a competência atual "real"
-          if (currComp === realComp) {
-            const despesasMes = dGeral.filter(i => i.competencia === realComp);
-            // Se houver despesas e todas estiverem pagas, pula para o mês seguinte
-            if (despesasMes.length > 0 && despesasMes.every(i => i.status === 'Pago')) {
-              if (currentMonth === 12) {
-                currentMonth = 1;
-                currentYear++;
-              } else {
-                currentMonth++;
-              }
-              localStorage.setItem('currentMonth', currentMonth);
-              localStorage.setItem('currentYear', currentYear);
-              updateDateDisplay();
-              return carregar(); // Recarrega com o novo mês
-            }
-          }
-        }
 
         const notesArea = document.getElementById('dashboard-notes');
         if (notesArea) notesArea.value = data.notaDashboard || "";
