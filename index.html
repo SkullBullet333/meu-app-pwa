@@ -2642,12 +2642,15 @@
                   <div class="col-5">
                     <select id="novo-cartao-titu" class="form-select dynamic-titulares"></select>
                   </div>
-                  <div class="col-8">
+                  <div class="col-4">
                     <input type="number" id="novo-cartao-venc" class="form-control" placeholder="Dia Venc.">
                   </div>
                   <div class="col-4">
+                    <input type="number" id="novo-cartao-fech" class="form-control" placeholder="Fech. (dias)">
+                  </div>
+                  <div class="col-4">
                     <button class="btn btn-primary w-100"
-                      onclick="addConfig('cartoes', ['novo-cartao-nome','novo-cartao-titu','novo-cartao-venc'])">Add</button>
+                      onclick="addConfig('cartoes', ['novo-cartao-nome','novo-cartao-titu','novo-cartao-venc','novo-cartao-fech'])">Add</button>
                   </div>
                 </div>
               </div>
@@ -4136,6 +4139,7 @@
       const nomeCartao = cartaoInfo[0];
       const titularCartao = cartaoInfo[1];
       const diaVencimento = cartaoInfo[2] || '10';
+      const diasFechamento = cartaoInfo[3] || '0';
 
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
@@ -4155,6 +4159,8 @@
         valor: valor,
         totalParcelas: document.getElementById('parc-c').value,
         vencimento: vencimento,
+        diaVencimento: diaVencimento,
+        diasFechamento: diasFechamento,
         simulada: document.getElementById('check-simulada-c').checked
       };
 
@@ -4479,7 +4485,8 @@
             <div>
               <strong>${c.nome || ''}</strong> 
               <small class="text-muted">(${c.titular || ''})</small>
-              <span class="dia-vencimento-badge">Dia ${c.diaVencimento || '10'}</span>
+              <span class="dia-vencimento-badge">Venc. ${c.diaVencimento || '10'}</span>
+              <span class="dia-vencimento-badge bg-info">Fech. ${c.diaFechamento || '0'}d</span>
             </div>
             <button class="btn-remove-config" onclick="deleteConfig('cartoes', '${valorUnico}')">
               <i class="fa-solid fa-trash-can"></i>
@@ -4525,7 +4532,7 @@
       const selCartao = document.getElementById('cartao-c');
       if (selCartao) {
         selCartao.innerHTML = (configApp.cartoes || []).map(c =>
-          `<option value="${c.nome || ''}|${c.titular || ''}|${c.diaVencimento || '10'}">${c.nome || ''}</option>`
+          `<option value="${c.nome || ''}|${c.titular || ''}|${c.diaVencimento || '10'}|${c.diaFechamento || '0'}">${c.nome || ''}</option>`
         ).join('');
       }
     }
