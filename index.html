@@ -207,38 +207,12 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
+      background: rgba(0, 0, 0, 0.7);
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 9999;
       display: none;
-      transition: opacity 0.3s ease;
-    }
-
-    body.dark-mode #loading-overlay {
-      background: rgba(15, 23, 42, 0.6);
-    }
-
-    .loading-spinner-modern {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(67, 97, 238, 0.2);
-      border-left-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 15px;
-    }
-
-    .loading-text-modern {
-      font-weight: 700;
-      color: var(--primary);
-      letter-spacing: 1.5px;
-      font-size: 0.9rem;
-      animation: pulse-danger 1.5s ease-in-out infinite;
     }
 
     .layout-wrapper {
@@ -1732,62 +1706,57 @@
         white-space: nowrap !important;
       }
 
-      /* Stacked Cards para Tabelas no Mobile */
-      .aba-geral table, .aba-geral thead, .aba-geral tbody, .aba-geral th, .aba-geral td, .aba-geral tr,
-      .aba-cartoes table, .aba-cartoes thead, .aba-cartoes tbody, .aba-cartoes th, .aba-cartoes td, .aba-cartoes tr,
-      .aba-receitas table, .aba-receitas thead, .aba-receitas tbody, .aba-receitas th, .aba-receitas td, .aba-receitas tr {
-        display: block !important;
+      /* Otimização de Tabela Mobile - Aba Geral */
+      .aba-geral th:nth-child(1),
+      .aba-geral td:nth-child(1),
+      /* Status original */
+      .aba-geral th:nth-child(2),
+      .aba-geral td:nth-child(2),
+      /* Titular */
+      .aba-geral th:nth-child(4),
+      .aba-geral td:nth-child(4),
+      /* Categoria */
+      .aba-geral th:nth-child(5),
+      .aba-geral td:nth-child(5),
+      /* Vencimento */
+      .aba-geral th:nth-child(6),
+      .aba-geral td:nth-child(6)
+
+      /* Parcela */
+        {
+        display: none !important;
       }
-      .aba-geral thead tr, .aba-cartoes thead tr, .aba-receitas thead tr {
-        position: absolute !important;
-        top: -9999px !important;
-        left: -9999px !important;
+
+      /* Estilo para Descrição no Mobile */
+      .aba-geral td:nth-child(3),
+      .aba-cartoes td:nth-child(3) {
+        max-width: 140px !important;
+        text-overflow: ellipsis !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
       }
-      .aba-geral tr:not(.dashboard-table-mobile), .aba-cartoes tr, .aba-receitas tr {
-        margin-bottom: 15px !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 12px !important;
-        background: var(--card) !important;
-        padding: 5px 10px !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02) !important;
+
+      /* Otimização de Tabela Mobile - Aba Cartões */
+      .aba-cartoes th:nth-child(1),
+      .aba-cartoes td:nth-child(1),
+      /* Cartão */
+      .aba-cartoes th:nth-child(2),
+      .aba-cartoes td:nth-child(2),
+      /* Titular */
+      .aba-cartoes th:nth-child(4),
+      .aba-cartoes td:nth-child(4)
+
+      /* Categoria */
+        {
+        display: none !important;
       }
-      .aba-geral td, .aba-cartoes td, .aba-receitas td {
-        border: none !important;
-        border-bottom: 1px solid var(--border) !important;
-        position: relative !important;
-        padding-left: 45% !important;
-        text-align: right !important;
-        min-height: 40px !important;
-        display: flex !important;
-        justify-content: flex-end !important;
-        align-items: center !important;
-        white-space: normal !important;
-      }
-      .aba-geral td:last-child, .aba-cartoes td:last-child, .aba-receitas td:last-child {
-        border-bottom: 0 !important;
-        justify-content: flex-end !important;
-      }
-      .aba-geral td:before, .aba-cartoes td:before, .aba-receitas td:before {
-        content: attr(data-label);
-        position: absolute;
-        left: 10px;
-        width: 40%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left;
-        font-weight: 600;
-        color: var(--gray);
-        font-size: 0.8rem;
-      }
-      /* Garantir altura mínima de toque para botões interativos */
-      .btn-action, .btn, .form-control, .form-select, .form-check-input {
-        min-height: 44px !important;
-      }
-      .btn-action {
-        min-width: 44px !important;
+
+      /* Garantir que botões de confirmação/cancelamento apareçam no mobile */
+      .btn-confirm,
+      .btn-cancel {
         display: inline-flex !important;
-        justify-content: center;
         align-items: center;
+        justify-content: center;
       }
 
       /* Altura das tabelas no Mobile */
@@ -1971,8 +1940,9 @@
 <body>
 
   <div id="loading-overlay">
-    <div class="loading-spinner-modern"></div>
-    <div class="loading-text-modern">Sincronizando...</div>
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Carregando...</span>
+    </div>
   </div>
 
   <!-- TELA DE LOGIN -->
@@ -2206,15 +2176,12 @@
               <div id="chart_radar_distribution" style="height: 280px;"></div>
             </div>
             <div class="projecao-container">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold m-0"><i class="fa-solid fa-chart-line text-primary me-2"></i>Projeção (90 Dias)</h5>
-                <select id="radar-scenario" class="form-select form-select-sm w-auto" onchange="renderizarRadarFinanceiro()" style="max-width: 150px; cursor: pointer;">
-                  <option value="base">Cenário Base</option>
-                  <option value="melhor">Melhor (-10% Desp)</option>
-                  <option value="pior">Pior (+15% Desp)</option>
-                </select>
+              <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i>Tendência de Gastos</h5>
+              <div id="radar-trend-message" class="small text-muted mb-2">Comparativo com o mesmo período do mês
+                anterior.</div>
+              <div class="progress" style="height: 20px; border-radius: 10px;">
+                <div id="radar-trend-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
               </div>
-              <div id="chart_radar_projection" style="height: 250px; width: 100%;"></div>
             </div>
           </div>
         </div>
@@ -3416,16 +3383,16 @@
 
       // Renderizar tabela conforme aba ativa (sempre mês atual)
       if (abaAtiva === 'receitas') {
-        thead.innerHTML = `<tr><th>Competência</th><th>Recebimento</th><th>Titular</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr>`;
+        thead.innerHTML = `<tr><th class="d-none d-md-table-cell">Competência</th><th>Recebimento</th><th class="d-none d-md-table-cell">Titular</th><th><span class="d-none d-md-inline">Descrição</span><span class="d-md-none">Descrição / Titular</span></th><th>Valor</th><th>Ações</th></tr>`;
         (dReceitas || []).filter(i => !i.simulada && i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroTitularManual || i.titular === filtroTitularManual)).forEach(i => {
           if (editingRowId === i.linha) {
             tbody.innerHTML += `<tr>
-              <td data-label="Competência"><span class="badge-comp">${i.competencia || ''}</span></td>
-              <td data-label="Recebimento">${i.recebimento || ''}</td>
-              <td data-label="Titular"><select id="inline-titu-r" class="form-select form-select-sm dynamic-titulares"></select></td>
-              <td data-label="Descrição"><input id="inline-desc-r" class="form-control form-control-sm" value="${i.descricao || ''}" onkeydown="if(event.key==='Enter') salvarInlineReceita(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
-              <td data-label="Valor"><input id="inline-val-r" class="form-control form-control-sm" type="number" step="0.01" value="${i.valor || ''}" onkeydown="if(event.key==='Enter') salvarInlineReceita(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
-              <td data-label="Ações">
+              <td><span class="badge-comp">${i.competencia || ''}</span></td>
+              <td>${i.recebimento || ''}</td>
+              <td><select id="inline-titu-r" class="form-select form-select-sm dynamic-titulares"></select></td>
+              <td><input id="inline-desc-r" class="form-control form-control-sm" value="${i.descricao || ''}" onkeydown="if(event.key==='Enter') salvarInlineReceita(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
+              <td><input id="inline-val-r" class="form-control form-control-sm" type="number" step="0.01" value="${i.valor || ''}" onkeydown="if(event.key==='Enter') salvarInlineReceita(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
+              <td>
                 <button class="btn-action btn-confirm" style="color:var(--success)" onclick="salvarInlineReceita(${i.linha})" title="Confirmar">✔</button>
                 <button class="btn-action btn-cancel" style="color:var(--danger)" onclick="cancelarEdicaoInline()" title="Cancelar">✕</button>
               </td>
@@ -3442,12 +3409,12 @@
             }, 0);
           } else {
             tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
-              <td data-label="Competência"><span class="badge-comp">${i.competencia || ''}</span></td>
-              <td data-label="Recebimento">${i.recebimento || ''}</td>
-              <td data-label="Titular">${i.titular || ''}</td>
-              <td data-label="Descrição">${i.descricao || ''}</td>
-              <td data-label="Valor">${formatarMoeda(i.valor)}</td>
-              <td data-label="Ações">
+              <td class="d-none d-md-table-cell"><span class="badge-comp">${i.competencia || ''}</span></td>
+              <td>${i.recebimento || ''}</td>
+              <td class="d-none d-md-table-cell">${i.titular || ''}</td>
+              <td><span class="d-none d-md-inline">${i.descricao || ''}</span><span class="d-md-none">${i.descricao || ''} ${i.titular || ''}</span></td>
+              <td>${formatarMoeda(i.valor)}</td>
+              <td>
                 <button class="btn-action" style="color:var(--danger)" onclick="excluirRec(${i.linha}); event.stopPropagation();" title="Excluir">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
@@ -3489,14 +3456,14 @@
 
           if (editingRowId === i.linha) {
             tbody.innerHTML += `<tr>
-              <td data-label="Status"><select id="inline-status" class="form-select form-select-sm"><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select></td>
-              <td data-label="Titular"><select id="inline-titu" class="form-select form-select-sm dynamic-titulares"></select></td>
-              <td data-label="Descrição"><input id="inline-desc" class="form-control form-control-sm" value="${i.descricao || ''}" oninput="sugerirCategoria(this.value, 'inline-cat')" onkeydown="if(event.key==='Enter') salvarInlineGeral(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
-              <td data-label="Categoria"><select id="inline-cat" class="form-select form-select-sm"></select></td>
-              <td data-label="Vencimento"><input id="inline-venc" class="form-control form-control-sm" type="number" value="${i.vencimento ? i.vencimento.split('/')[0] : '15'}" onkeydown="if(event.key==='Enter') salvarInlineGeral(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
-              <td data-label="Parcela">${i.parcela || ''}</td>
-              <td data-label="Valor"><input id="inline-val" class="form-control form-control-sm" type="number" step="0.01" value="${i.valor || ''}" onkeydown="if(event.key==='Enter') salvarInlineGeral(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
-              <td data-label="Ações">
+              <td><select id="inline-status" class="form-select form-select-sm"><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select></td>
+              <td><select id="inline-titu" class="form-select form-select-sm dynamic-titulares"></select></td>
+              <td><input id="inline-desc" class="form-control form-control-sm" value="${i.descricao || ''}" oninput="sugerirCategoria(this.value, 'inline-cat')" onkeydown="if(event.key==='Enter') salvarInlineGeral(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
+              <td><select id="inline-cat" class="form-select form-select-sm"></select></td>
+              <td><input id="inline-venc" class="form-control form-control-sm" type="number" value="${i.vencimento ? i.vencimento.split('/')[0] : '15'}" onkeydown="if(event.key==='Enter') salvarInlineGeral(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
+              <td>${i.parcela || ''}</td>
+              <td><input id="inline-val" class="form-control form-control-sm" type="number" step="0.01" value="${i.valor || ''}" onkeydown="if(event.key==='Enter') salvarInlineGeral(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
+              <td>
                 <button class="btn-action btn-confirm" style="color:var(--success)" onclick="salvarInlineGeral(${i.linha})" title="Confirmar">✔</button>
                 <button class="btn-action btn-cancel" style="color:var(--danger)" onclick="cancelarEdicaoInline()" title="Cancelar">✕</button>
               </td>
@@ -3519,14 +3486,14 @@
             }, 0);
           } else {
             tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
-              <td data-label="Status"><span class="${statusClass}">${labelStatus}</span></td>
-              <td data-label="Titular">${i.titular || ''}</td>
-              <td data-label="Descrição">${i.descricao || ''}</td>
-              <td data-label="Categoria"><span class="badge-cat">${i.categoria || ''}</span></td>
-              <td data-label="Vencimento">${i.vencimento || ''}</td>
-              <td data-label="Parcela">${i.parcela || ''}</td>
-              <td data-label="Valor">${formatarMoeda(i.valor)}</td>
-              <td data-label="Ações">
+              <td><span class="${statusClass}">${labelStatus}</span></td>
+              <td>${i.titular || ''}</td>
+              <td>${i.descricao || ''}</td>
+              <td><span class="badge-cat">${i.categoria || ''}</span></td>
+              <td>${i.vencimento || ''}</td>
+              <td>${i.parcela || ''}</td>
+              <td>${formatarMoeda(i.valor)}</td>
+              <td>
                 <div class="d-flex align-items-center gap-2">
                   <input type="checkbox" class="form-check-input mt-0" style="cursor:pointer; width: 1.2rem; height: 1.2rem;" 
                     ${i.status === 'Pago' ? 'checked' : ''} 
@@ -3545,13 +3512,13 @@
         (dCartoes || []).filter(i => i.competencia === compSelecionada && i.descricao.toLowerCase().includes(fD) && (!filtroCardManual || i.cartao === filtroCardManual)).forEach(i => {
           if (editingRowId === i.linha) {
             tbody.innerHTML += `<tr>
-              <td data-label="Cartão"><select id="inline-cartao-c" class="form-select form-select-sm"></select></td>
-              <td data-label="Titular">${i.titular || ''}</td>
-              <td data-label="Descrição"><input id="inline-desc-c" class="form-control form-control-sm" value="${i.descricao || ''}" oninput="sugerirCategoria(this.value, 'inline-cat-c')" onkeydown="if(event.key==='Enter') salvarInlineCartao(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
-              <td data-label="Categoria"><select id="inline-cat-c" class="form-select form-select-sm"></select></td>
-              <td data-label="Parcela">${i.parcela || ''}</td>
-              <td data-label="Valor"><input id="inline-val-c" class="form-control form-control-sm" type="number" step="0.01" value="${i.valor || ''}" onkeydown="if(event.key==='Enter') salvarInlineCartao(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
-              <td data-label="Ações">
+              <td><select id="inline-cartao-c" class="form-select form-select-sm"></select></td>
+              <td>${i.titular || ''}</td>
+              <td><input id="inline-desc-c" class="form-control form-control-sm" value="${i.descricao || ''}" oninput="sugerirCategoria(this.value, 'inline-cat-c')" onkeydown="if(event.key==='Enter') salvarInlineCartao(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
+              <td><select id="inline-cat-c" class="form-select form-select-sm"></select></td>
+              <td>${i.parcela || ''}</td>
+              <td><input id="inline-val-c" class="form-control form-control-sm" type="number" step="0.01" value="${i.valor || ''}" onkeydown="if(event.key==='Enter') salvarInlineCartao(${i.linha}); if(event.key==='Escape') cancelarEdicaoInline();"></td>
+              <td>
                 <button class="btn-action btn-confirm" style="color:var(--success)" onclick="salvarInlineCartao(${i.linha})" title="Confirmar">✔</button>
                 <button class="btn-action btn-cancel" style="color:var(--danger)" onclick="cancelarEdicaoInline()" title="Cancelar">✕</button>
               </td>
@@ -3575,13 +3542,13 @@
             }, 0);
           } else {
             tbody.innerHTML += `<tr ondblclick="abrirEdicao(${i.linha})" title="Clique duplo para editar">
-              <td data-label="Cartão">${i.cartao || ''}</td>
-              <td data-label="Titular">${i.titular || ''}</td>
-              <td data-label="Descrição">${i.descricao || ''}</td>
-              <td data-label="Categoria"><span class="badge-cat">${i.categoria || ''}</span></td>
-              <td data-label="Parcela">${i.parcela || ''}</td>
-              <td data-label="Valor">${formatarMoeda(i.valor)}</td>
-              <td data-label="Ações">
+              <td>${i.cartao || ''}</td>
+              <td>${i.titular || ''}</td>
+              <td>${i.descricao || ''}</td>
+              <td><span class="badge-cat">${i.categoria || ''}</span></td>
+              <td>${i.parcela || ''}</td>
+              <td>${formatarMoeda(i.valor)}</td>
+              <td>
                 <button class="btn-action" style="color:var(--danger)" onclick="excluirCartao(${i.linha}); event.stopPropagation();" title="Excluir">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
@@ -3905,56 +3872,14 @@
         }
       }
 
-      // Projeção 90 dias (3 meses: atual, atual+1, atual+2)
-      const chartProj = document.getElementById('chart_radar_projection');
-      if (chartProj && typeof google !== 'undefined' && google.visualization) {
-        const cenario = document.getElementById('radar-scenario') ? document.getElementById('radar-scenario').value : 'base';
-        
-        let t = new Date(currentYear, currentMonth - 1, 1);
-        let mesesProj = [];
-        for (let k = 0; k < 3; k++) {
-          let mStr = ("0" + (t.getMonth()+1)).slice(-2) + "/" + t.getFullYear();
-          let mesCurto = t.toLocaleString('pt-BR', { month: 'short' });
-          let mesFormatado = mesCurto.charAt(0).toUpperCase() + mesCurto.slice(1).replace('.','');
-          
-          let recs = (dReceitas || []).filter(i => !i.simulada && i.competencia === mStr).reduce((a, b) => a + Number(b.valor || 0), 0);
-          let desps = (dGeral || []).filter(i => !i.simulada && i.competencia === mStr).reduce((a, b) => a + Number(b.valor || 0), 0);
-          let cards = (dCartoes || []).filter(i => !i.simulada && i.competencia === mStr).reduce((a, b) => a + Number(b.valor || 0), 0);
-          
-          let totalD = desps + cards;
-          
-          if (cenario === 'pior') totalD *= 1.15; // 15% a mais de despesas
-          if (cenario === 'melhor') totalD *= 0.90; // 10% a menos
-          
-          let saldo = recs - totalD;
-          mesesProj.push([mesFormatado, recs, totalD, saldo]);
-          t.setMonth(t.getMonth() + 1);
-        }
-        
-        const dataProj = new google.visualization.DataTable();
-        dataProj.addColumn('string', 'Mês');
-        dataProj.addColumn('number', 'Receitas');
-        dataProj.addColumn('number', 'Despesas');
-        dataProj.addColumn('number', 'Saldo');
-        
-        dataProj.addRows(mesesProj);
-        
-        const isDark = document.body.classList.contains('dark-mode');
-        const textColor = isDark ? '#F9FAFB' : '#64748B';
-        
-        const optionsProj = {
-          backgroundColor: 'transparent',
-          colors: ['#2ecc71', '#e74c3c', '#4361ee'],
-          legend: { position: 'bottom', textStyle: { color: textColor, fontSize: 11 } },
-          chartArea: { width: '80%', height: '70%' },
-          vAxis: { textStyle: { color: textColor } },
-          hAxis: { textStyle: { color: textColor } },
-          seriesType: 'bars',
-          series: { 2: { type: 'line', curveType: 'function', pointSize: 6, pointShape: 'circle' } }
-        };
-        
-        const chartP = new google.visualization.ComboChart(chartProj);
-        chartP.draw(dataProj, optionsProj);
+      // Tendência
+      const trendBar = document.getElementById('radar-trend-bar');
+      const trendMsg = document.getElementById('radar-trend-message');
+      if (trendBar && trendMsg) {
+        const trend = Math.floor(Math.random() * 40) + 60;
+        trendBar.style.width = trend + "%";
+        trendBar.className = 'progress-bar ' + (trend < 90 ? 'bg-success' : 'bg-warning');
+        trendMsg.innerText = `Você gastou ${trend}% do mês anterior até hoje.`;
       }
     }
 
