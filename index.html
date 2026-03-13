@@ -2612,9 +2612,18 @@
                 <i id="toggle-list-titulares" class="fa-solid fa-eye section-toggle-btn" title="Exibir/Ocultar"
                   onclick="toggleSettingsList('content-titulares', 'toggle-list-titulares')"></i>
               </h5>
-              <div class="input-group mb-3">
-                <input type="text" id="novo-titular" class="form-control" placeholder="Nome do Titular">
-                <button class="btn btn-primary" onclick="addConfig('titulares', 'novo-titular')">Adicionar</button>
+              <div class="row g-2 mb-3">
+                <div class="col-7">
+                  <input type="text" id="novo-titular" class="form-control" placeholder="Nome do Titular">
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <input type="password" id="novo-titular-senha" class="form-control" placeholder="Senha">
+                    <button class="btn btn-primary" onclick="addConfig('titulares', ['novo-titular', 'novo-titular-senha'])">
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
               <!-- Input oculto para Upload -->
               <input type="file" id="upload-titular-foto" accept="image/*" style="display:none"
@@ -4446,7 +4455,8 @@
       if (tipo === 'titulares') {
         novosDados = {
           nome: document.getElementById('edit-config-nome').value,
-          foto: document.getElementById('edit-config-foto').value // Mantém o valor atual se não houver campo de edição de foto aqui
+          foto: document.getElementById('edit-config-foto').value,
+          senha: document.getElementById('edit-config-senha').value
         };
       } else if (tipo === 'cartoes') {
         novosDados = [
@@ -4494,13 +4504,21 @@
         if (editingConfigType === 'titulares' && editingConfigLine === linha) {
           return `
             <li class="list-group-item editing-row">
-              <div class="d-flex align-items-center gap-2 w-100">
-                <input type="text" id="edit-config-nome" class="form-control form-control-sm" value="${nome}" 
-                       onkeydown="handleConfigKey(event, 'titulares', ${linha})">
-                <input type="hidden" id="edit-config-foto" value="${foto}">
-                <div class="inline-edit-actions">
-                  <button class="inline-save-btn" onclick="salvarEdicaoConfig('titulares', ${linha})"><i class="fa-solid fa-check"></i></button>
-                  <button class="inline-cancel-btn" onclick="cancelarEdicaoConfig()"><i class="fa-solid fa-times"></i></button>
+              <div class="inline-edit-row">
+                <div class="row g-2 w-100 align-items-center">
+                  <div class="col-5">
+                    <input type="text" id="edit-config-nome" class="form-control form-control-sm" value="${nome}"
+                           onkeydown="handleConfigKey(event, 'titulares', ${linha})">
+                  </div>
+                  <div class="col-4">
+                    <input type="password" id="edit-config-senha" class="form-control form-control-sm" placeholder="Nova Senha"
+                           onkeydown="handleConfigKey(event, 'titulares', ${linha})">
+                  </div>
+                  <input type="hidden" id="edit-config-foto" value="${foto}">
+                  <div class="col-3 d-flex justify-content-end gap-2">
+                    <button class="inline-save-btn" onclick="salvarEdicaoConfig('titulares', ${linha})"><i class="fa-solid fa-check"></i></button>
+                    <button class="inline-cancel-btn" onclick="cancelarEdicaoConfig()"><i class="fa-solid fa-times"></i></button>
+                  </div>
                 </div>
               </div>
             </li>
