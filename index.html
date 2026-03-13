@@ -2815,9 +2815,7 @@
         }
       };
       if (body) {
-        // Garantir que valores numéricos sejam convertidos corretamente e IDs sejam inteiros
         const bodyCopy = JSON.parse(JSON.stringify(body));
-        if (bodyCopy.valor) bodyCopy.valor = Number(bodyCopy.valor);
         if (bodyCopy.linha) bodyCopy.id = parseInt(bodyCopy.linha);
         options.body = JSON.stringify(bodyCopy);
       }
