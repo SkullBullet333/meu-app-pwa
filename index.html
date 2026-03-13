@@ -4889,7 +4889,10 @@
           errorDiv.style.display = "block";
         }
       } catch (error) {
-        errorDiv.innerText = "Erro ao conectar com o servidor";
+        console.error('Erro no login:', error);
+        errorDiv.innerText = error.message.includes('requisicao') 
+          ? "Erro no servidor. Tente novamente em instantes." 
+          : "Erro de conexão. Verifique sua internet.";
         errorDiv.style.display = "block";
       } finally {
         btn.disabled = false;
