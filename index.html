@@ -2803,54 +2803,31 @@
     let editingConfigLine = null;
     let anoModalAtivo = currentYear;
 
-    // URL da API do Google Apps Script
-    const API_URL = "https://script.google.com/macros/s/AKfycby9IwfWuP5U95sn2m5MHOuc8y2slnFoj36v_MVbfr8RYwPyUNELoNfpfc9UbcE26_li/exec";
+    // URL da nova API REST
+    const BASE_URL = "https://api-financas-t1zh.onrender.com";
 
-    // ==================== FUNÇÃO PRINCIPAL DA API (JSONP) ====================
-    function callAppsScript(acao, dados = {}) {
-      return new Promise((resolve, reject) => {
-        try {
-          const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-          const script = document.createElement('script');
-
-          const params = new URLSearchParams({
-            acao: acao,
-            dados: JSON.stringify(dados),
-            callback: callbackName
-          });
-
-          window[callbackName] = function (response) {
-            delete window[callbackName];
-            if (script.parentNode) document.body.removeChild(script);
-            clearTimeout(timeout);
-
-            if (response && response.error) {
-              reject(new Error(response.error));
-            } else {
-              resolve(response || {});
-            }
-          };
-
-          const timeout = setTimeout(() => {
-            delete window[callbackName];
-            if (script.parentNode) document.body.removeChild(script);
-            reject(new Error('Timeout ao chamar a API'));
-          }, 30000);
-
-          script.src = API_URL + '?' + params.toString();
-          script.onerror = function () {
-            clearTimeout(timeout);
-            delete window[callbackName];
-            if (script.parentNode) document.body.removeChild(script);
-            reject(new Error('Erro ao carregar o script da API'));
-          };
-
-          document.body.appendChild(script);
-
-        } catch (error) {
-          reject(error);
+    // ==================== FUNÇÃO PRINCIPAL DA API (REST FETCH) ====================
+    async function apiFetch(endpoint, method = 'GET', body = null) {
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
         }
-      });
+      };
+      if (body) {
+        // Garantir que valores numéricos sejam convertidos corretamente e IDs sejam inteiros
+        const bodyCopy = JSON.parse(JSON.stringify(body));
+        if (bodyCopy.valor) bodyCopy.valor = Number(bodyCopy.valor);
+        if (bodyCopy.linha) bodyCopy.id = parseInt(bodyCopy.linha);
+        options.body = JSON.stringify(bodyCopy);
+      }
+
+      const response = await fetch(`${BASE_URL}${endpoint}`, options);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erro na requisição: ${response.status}`);
+      }
+      return await response.json();
     }
 
     // ==================== FUNÇÕES DE UTILIDADE ====================
@@ -3116,17 +3093,16 @@
     async function carregar() {
       showLoading();
       try {
-        const data = await callAppsScript('carregarDadosIniciais', {
-          mes: currentMonth,
-          ano: currentYear
-        });
+        const [despesas, receitas, cartoes] = await Promise.all([
+          apiFetch('/api/despesas'),
+          apiFetch('/api/receitas'),
+          apiFetch('/api/cartoes')
+        ]);
 
-        dReceitas = data.receitas || [];
-        dGeral = data.geral || [];
-        dCartoes = data.cartoes || [];
-
-        const notesArea = document.getElementById('dashboard-notes');
-        if (notesArea) notesArea.value = data.notaDashboard || "";
+        // Adaptar dados vindos do Postgres (mudar id para linha para compatibilidade)
+        dGeral = (despesas || []).map(d => ({ ...d, linha: d.id }));
+        dReceitas = (receitas || []).map(r => ({ ...r, linha: r.id }));
+        dCartoes = (cartoes || []).map(c => ({ ...c, linha: c.id }));
 
         renderizarTabelaEAnalise();
         if (document.getElementById('view-dashboard').classList.contains('active')) {
@@ -4055,6 +4031,7 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
+      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || !titular) {
         showToast('Preencha todos os campos!', 'warning');
@@ -4066,19 +4043,17 @@
         descricao: descricao,
         categoria: categoria,
         valor: valor,
-        totalParcelas: document.getElementById('parc').value,
         vencimento: vencimento,
         titular: titular,
+        competencia: competencia,
         simulada: document.getElementById('check-simulada').checked
       };
 
       showLoading();
       try {
-        if (linhaEdit) {
-          await callAppsScript('editarDespesa', dados);
-        } else {
-          await callAppsScript('salvarDespesa', dados);
-        }
+        // Na API REST, usamos POST para criar ou atualizar (dependendo da implementação do backend)
+        await apiFetch('/api/despesas', 'POST', dados);
+
         showToast('Despesa salva com sucesso!', 'success');
         fecharForms();
         await carregar();
@@ -4099,6 +4074,7 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const recebimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
+      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || !titular) {
         showToast('Preencha todos os campos!', 'warning');
@@ -4109,19 +4085,16 @@
         linha: linhaEdit,
         descricao: descricao,
         valor: valor,
-        totalParcelas: document.getElementById('parc-r').value,
         recebimento: recebimento,
         titular: titular,
+        competencia: competencia,
         simulada: document.getElementById('check-simulada-r').checked
       };
 
       showLoading();
       try {
-        if (linhaEdit) {
-          await callAppsScript('editarReceita', dados);
-        } else {
-          await callAppsScript('salvarReceita', dados);
-        }
+        await apiFetch('/api/receitas', 'POST', dados);
+
         showToast('Receita salva com sucesso!', 'success');
         fecharForms();
         await carregar();
@@ -4141,11 +4114,11 @@
       const nomeCartao = cartaoInfo[0];
       const titularCartao = cartaoInfo[1];
       const diaVencimento = cartaoInfo[2] || '10';
-      const diasFechamento = cartaoInfo[3] || '0';
 
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
+      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || cartaoInfo.length < 2) {
         showToast('Preencha todos os campos!', 'warning');
@@ -4159,20 +4132,15 @@
         descricao: descricao,
         categoria: document.getElementById('cat-c').value.trim(),
         valor: valor,
-        totalParcelas: document.getElementById('parc-c').value,
         vencimento: vencimento,
-        diaVencimento: diaVencimento,
-        diasFechamento: diasFechamento,
+        competencia: competencia,
         simulada: document.getElementById('check-simulada-c').checked
       };
 
       showLoading();
       try {
-        if (linhaEdit) {
-          await callAppsScript('editarCartao', dados);
-        } else {
-          await callAppsScript('lancarParcelas', dados);
-        }
+        await apiFetch('/api/cartoes', 'POST', dados);
+
         showToast('Cartão lançado com sucesso!', 'success');
         fecharForms();
         await carregar();
@@ -4190,6 +4158,7 @@
       const titular = document.getElementById('inline-titu-r').value;
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
+      const competencia = `${mesAtual}/${anoAtual}`;
 
       const itemOriginal = (dReceitas || []).find(x => x.linha === linha);
       const dia = itemOriginal && itemOriginal.vencimento ? itemOriginal.vencimento.split('/')[0] : "05";
@@ -4200,10 +4169,10 @@
         return;
       }
 
-      const dados = { linha, descricao, valor, titular, recebimento, totalParcelas: "1" };
+      const dados = { linha, id: linha, descricao, valor, titular, recebimento, competencia };
       showLoading();
       try {
-        await callAppsScript('editarReceita', dados);
+        await apiFetch('/api/receitas', 'POST', dados);
         showToast('Receita atualizada!', 'success');
         editingRowId = null;
         await carregar();
@@ -4225,16 +4194,17 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
+      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || !titular) {
         showToast('Preencha os campos obrigatorios!', 'warning');
         return;
       }
 
-      const dados = { linha, status, titular, descricao, categoria, valor, vencimento, totalParcelas: "1" };
+      const dados = { linha, id: linha, status, titular, descricao, categoria, valor, vencimento, competencia };
       showLoading();
       try {
-        await callAppsScript('editarDespesa', dados);
+        await apiFetch('/api/despesas', 'POST', dados);
         showToast('Despesa atualizada!', 'success');
         editingRowId = null;
         await carregar();
@@ -4258,6 +4228,7 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
+      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || cartaoInfo.length < 2) {
         showToast('Preencha os campos obrigatorios!', 'warning');
@@ -4266,18 +4237,19 @@
 
       const dados = {
         linha,
+        id: linha,
         cartao: nomeCartao,
         titular: titularCartao,
         descricao,
         categoria,
         valor,
         vencimento,
-        totalParcelas: "1"
+        competencia
       };
 
       showLoading();
       try {
-        await callAppsScript('editarCartao', dados);
+        await apiFetch('/api/cartoes', 'POST', dados);
         showToast('Gasto atualizado!', 'success');
         editingRowId = null;
         await carregar();
@@ -4300,7 +4272,7 @@
       showActionModal(msg, async function () {
         showLoading();
         try {
-          await callAppsScript('limparDados', { tipo });
+          await apiFetch('/api/limpar', 'POST', { tipo });
           showToast('Simulações limpas com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4319,7 +4291,7 @@
         async function () {
           showLoading();
           try {
-            await callAppsScript('atualizarFaturaCompetencia', { competencia });
+            await apiFetch('/api/cartoes/atualizar-fatura', 'POST', { competencia });
             showToast(`Faturas atualizadas!`, 'success');
             await carregar();
           } catch (error) {
@@ -4339,7 +4311,8 @@
       showActionModal(`Deseja marcar "${item.descricao}" como pago?`, async function () {
         showLoading();
         try {
-          await callAppsScript('marcarComoPago', { linha: l });
+          const dados = { ...item, id: l, status: 'Pago', valor: Number(item.valor) };
+          await apiFetch('/api/despesas', 'POST', dados);
           showToast('Item marcado como pago!', 'success');
           await carregar();
         } catch (error) {
@@ -4357,7 +4330,8 @@
       showActionModal(`Deseja reverter "${item.descricao}" para "Em aberto"?`, async function () {
         showLoading();
         try {
-          await callAppsScript('reverterPagamento', { linha: l });
+          const dados = { ...item, id: l, status: 'Em aberto', valor: Number(item.valor) };
+          await apiFetch('/api/despesas', 'POST', dados);
           showToast('Item revertido para em aberto!', 'success');
           await carregar();
         } catch (error) {
@@ -4375,7 +4349,7 @@
       showActionModal(`Deseja realmente excluir "${item.descricao}"?`, async function () {
         showLoading();
         try {
-          await callAppsScript('excluirDespesa', { linha: l });
+          await apiFetch(`/api/despesas/${l}`, 'DELETE');
           showToast('Item excluído com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4393,7 +4367,7 @@
       showActionModal(`Deseja realmente excluir a receita "${item.descricao}"?`, async function () {
         showLoading();
         try {
-          await callAppsScript('excluirReceita', { linha: l });
+          await apiFetch(`/api/receitas/${l}`, 'DELETE');
           showToast('Receita excluída com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4411,7 +4385,7 @@
       showActionModal(`Deseja realmente excluir "${item.descricao}" do cartão ${item.cartao}?`, async function () {
         showLoading();
         try {
-          await callAppsScript('excluirGastoCartao', { linha: l });
+          await apiFetch(`/api/cartoes/${l}`, 'DELETE');
           showToast('Gasto excluído com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4439,7 +4413,7 @@
     // ==================== CONFIGURAÇÕES ====================
     async function carregarConfigs() {
       try {
-        const res = await callAppsScript('buscarConfigs');
+        const res = await apiFetch('/api/configs');
         configApp = res || { titulares: [], cartoes: [], categorias: [] };
         renderizarConfigScreen();
         atualizarSelectsDinamicos();
@@ -4492,7 +4466,7 @@
 
       showLoading();
       try {
-        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor: novosDados });
+        const res = await apiFetch('/api/configs', 'POST', { tipo, linha, id: linha, valor: novosDados });
         configApp = res;
         editingConfigType = null;
         editingConfigLine = null;
@@ -4710,7 +4684,7 @@
       showActionModal(mensagem, async function () {
         showLoading();
         try {
-          const res = await callAppsScript('removerConfigItem', { tipo, valor });
+          const res = await apiFetch(`/api/configs/${tipo}?valor=${encodeURIComponent(valor)}`, 'DELETE');
           configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
           renderizarConfigScreen();
           atualizarSelectsDinamicos();
@@ -4737,7 +4711,7 @@
       showLoading();
       try {
         const base64 = await comprimirEConverterBase64(file);
-        const res = await callAppsScript('salvarConfigItem', {
+        const res = await apiFetch('/api/configs', 'POST', {
           tipo: 'titulares',
           valor: { nome: titularParaUpload, foto: base64 }
         });
@@ -4807,7 +4781,7 @@
 
       showLoading();
       try {
-        const res = await callAppsScript('salvarConfigItem', { tipo, valor });
+        const res = await apiFetch('/api/configs', 'POST', { tipo, valor });
         configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
         renderizarConfigScreen();
         atualizarSelectsDinamicos();
@@ -4879,7 +4853,7 @@
       errorDiv.style.display = "none";
 
       try {
-        const res = await callAppsScript('verificarLogin', { usuario: user, senha: pass });
+        const res = await apiFetch('/api/login', 'POST', { usuario: user, senha: pass });
         if (res.sucesso) {
           localStorage.setItem('usuarioLogado', res.usuario);
           document.getElementById('view-login').style.display = 'none';
@@ -4977,7 +4951,7 @@
               status.classList.add('visible');
             }
             try {
-              await callAppsScript('salvarNotaDashboard', { nota: notesArea.value });
+              await apiFetch('/api/notas', 'POST', { nota: notesArea.value });
               if (status) {
                 status.innerText = "Salvo!";
                 setTimeout(() => status.classList.remove('visible'), 2000);
