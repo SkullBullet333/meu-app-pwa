@@ -2612,18 +2612,9 @@
                 <i id="toggle-list-titulares" class="fa-solid fa-eye section-toggle-btn" title="Exibir/Ocultar"
                   onclick="toggleSettingsList('content-titulares', 'toggle-list-titulares')"></i>
               </h5>
-              <div class="row g-2 mb-3">
-                <div class="col-7">
-                  <input type="text" id="novo-titular" class="form-control" placeholder="Nome do Titular">
-                </div>
-                <div class="col-5">
-                  <div class="input-group">
-                    <input type="password" id="novo-titular-senha" class="form-control" placeholder="Senha">
-                    <button class="btn btn-primary" onclick="addConfig('titulares', ['novo-titular', 'novo-titular-senha'])">
-                      <i class="fa-solid fa-plus"></i>
-                    </button>
-                  </div>
-                </div>
+              <div class="input-group mb-3">
+                <input type="text" id="novo-titular" class="form-control" placeholder="Nome do Titular">
+                <button class="btn btn-primary" onclick="addConfig('titulares', 'novo-titular')">Adicionar</button>
               </div>
               <!-- Input oculto para Upload -->
               <input type="file" id="upload-titular-foto" accept="image/*" style="display:none"
@@ -2812,29 +2803,54 @@
     let editingConfigLine = null;
     let anoModalAtivo = currentYear;
 
-    // URL da nova API REST
-    const BASE_URL = "https://api-financas-t1zh.onrender.com";
+    // URL da API do Google Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycby9IwfWuP5U95sn2m5MHOuc8y2slnFoj36v_MVbfr8RYwPyUNELoNfpfc9UbcE26_li/exec";
 
-    // ==================== FUNÇÃO PRINCIPAL DA API (REST FETCH) ====================
-    async function apiFetch(endpoint, method = 'GET', body = null) {
-      const options = {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
+    // ==================== FUNÇÃO PRINCIPAL DA API (JSONP) ====================
+    function callAppsScript(acao, dados = {}) {
+      return new Promise((resolve, reject) => {
+        try {
+          const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          const script = document.createElement('script');
+
+          const params = new URLSearchParams({
+            acao: acao,
+            dados: JSON.stringify(dados),
+            callback: callbackName
+          });
+
+          window[callbackName] = function (response) {
+            delete window[callbackName];
+            if (script.parentNode) document.body.removeChild(script);
+            clearTimeout(timeout);
+
+            if (response && response.error) {
+              reject(new Error(response.error));
+            } else {
+              resolve(response || {});
+            }
+          };
+
+          const timeout = setTimeout(() => {
+            delete window[callbackName];
+            if (script.parentNode) document.body.removeChild(script);
+            reject(new Error('Timeout ao chamar a API'));
+          }, 30000);
+
+          script.src = API_URL + '?' + params.toString();
+          script.onerror = function () {
+            clearTimeout(timeout);
+            delete window[callbackName];
+            if (script.parentNode) document.body.removeChild(script);
+            reject(new Error('Erro ao carregar o script da API'));
+          };
+
+          document.body.appendChild(script);
+
+        } catch (error) {
+          reject(error);
         }
-      };
-      if (body) {
-        const bodyCopy = JSON.parse(JSON.stringify(body));
-        if (bodyCopy.linha) bodyCopy.id = parseInt(bodyCopy.linha);
-        options.body = JSON.stringify(bodyCopy);
-      }
-
-      const response = await fetch(`${BASE_URL}${endpoint}`, options);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Erro na requisição: ${response.status}`);
-      }
-      return await response.json();
+      });
     }
 
     // ==================== FUNÇÕES DE UTILIDADE ====================
@@ -3100,16 +3116,17 @@
     async function carregar() {
       showLoading();
       try {
-        const [despesas, receitas, cartoes] = await Promise.all([
-          apiFetch('/api/despesas'),
-          apiFetch('/api/receitas'),
-          apiFetch('/api/cartoes')
-        ]);
+        const data = await callAppsScript('carregarDadosIniciais', {
+          mes: currentMonth,
+          ano: currentYear
+        });
 
-        // Adaptar dados vindos do Postgres (mudar id para linha para compatibilidade)
-        dGeral = (despesas || []).map(d => ({ ...d, linha: d.id }));
-        dReceitas = (receitas || []).map(r => ({ ...r, linha: r.id }));
-        dCartoes = (cartoes || []).map(c => ({ ...c, linha: c.id }));
+        dReceitas = data.receitas || [];
+        dGeral = data.geral || [];
+        dCartoes = data.cartoes || [];
+
+        const notesArea = document.getElementById('dashboard-notes');
+        if (notesArea) notesArea.value = data.notaDashboard || "";
 
         renderizarTabelaEAnalise();
         if (document.getElementById('view-dashboard').classList.contains('active')) {
@@ -4038,7 +4055,6 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
-      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || !titular) {
         showToast('Preencha todos os campos!', 'warning');
@@ -4050,17 +4066,19 @@
         descricao: descricao,
         categoria: categoria,
         valor: valor,
+        totalParcelas: document.getElementById('parc').value,
         vencimento: vencimento,
         titular: titular,
-        competencia: competencia,
         simulada: document.getElementById('check-simulada').checked
       };
 
       showLoading();
       try {
-        // Na API REST, usamos POST para criar ou atualizar (dependendo da implementação do backend)
-        await apiFetch('/api/despesas', 'POST', dados);
-
+        if (linhaEdit) {
+          await callAppsScript('editarDespesa', dados);
+        } else {
+          await callAppsScript('salvarDespesa', dados);
+        }
         showToast('Despesa salva com sucesso!', 'success');
         fecharForms();
         await carregar();
@@ -4081,7 +4099,6 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const recebimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
-      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || !titular) {
         showToast('Preencha todos os campos!', 'warning');
@@ -4092,16 +4109,19 @@
         linha: linhaEdit,
         descricao: descricao,
         valor: valor,
+        totalParcelas: document.getElementById('parc-r').value,
         recebimento: recebimento,
         titular: titular,
-        competencia: competencia,
         simulada: document.getElementById('check-simulada-r').checked
       };
 
       showLoading();
       try {
-        await apiFetch('/api/receitas', 'POST', dados);
-
+        if (linhaEdit) {
+          await callAppsScript('editarReceita', dados);
+        } else {
+          await callAppsScript('salvarReceita', dados);
+        }
         showToast('Receita salva com sucesso!', 'success');
         fecharForms();
         await carregar();
@@ -4121,11 +4141,11 @@
       const nomeCartao = cartaoInfo[0];
       const titularCartao = cartaoInfo[1];
       const diaVencimento = cartaoInfo[2] || '10';
+      const diasFechamento = cartaoInfo[3] || '0';
 
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
-      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || cartaoInfo.length < 2) {
         showToast('Preencha todos os campos!', 'warning');
@@ -4139,15 +4159,20 @@
         descricao: descricao,
         categoria: document.getElementById('cat-c').value.trim(),
         valor: valor,
+        totalParcelas: document.getElementById('parc-c').value,
         vencimento: vencimento,
-        competencia: competencia,
+        diaVencimento: diaVencimento,
+        diasFechamento: diasFechamento,
         simulada: document.getElementById('check-simulada-c').checked
       };
 
       showLoading();
       try {
-        await apiFetch('/api/cartoes', 'POST', dados);
-
+        if (linhaEdit) {
+          await callAppsScript('editarCartao', dados);
+        } else {
+          await callAppsScript('lancarParcelas', dados);
+        }
         showToast('Cartão lançado com sucesso!', 'success');
         fecharForms();
         await carregar();
@@ -4165,7 +4190,6 @@
       const titular = document.getElementById('inline-titu-r').value;
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
-      const competencia = `${mesAtual}/${anoAtual}`;
 
       const itemOriginal = (dReceitas || []).find(x => x.linha === linha);
       const dia = itemOriginal && itemOriginal.vencimento ? itemOriginal.vencimento.split('/')[0] : "05";
@@ -4176,10 +4200,10 @@
         return;
       }
 
-      const dados = { linha, id: linha, descricao, valor, titular, recebimento, competencia };
+      const dados = { linha, descricao, valor, titular, recebimento, totalParcelas: "1" };
       showLoading();
       try {
-        await apiFetch('/api/receitas', 'POST', dados);
+        await callAppsScript('editarReceita', dados);
         showToast('Receita atualizada!', 'success');
         editingRowId = null;
         await carregar();
@@ -4201,17 +4225,16 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${dia.padStart(2, '0')}`;
-      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || !titular) {
         showToast('Preencha os campos obrigatorios!', 'warning');
         return;
       }
 
-      const dados = { linha, id: linha, status, titular, descricao, categoria, valor, vencimento, competencia };
+      const dados = { linha, status, titular, descricao, categoria, valor, vencimento, totalParcelas: "1" };
       showLoading();
       try {
-        await apiFetch('/api/despesas', 'POST', dados);
+        await callAppsScript('editarDespesa', dados);
         showToast('Despesa atualizada!', 'success');
         editingRowId = null;
         await carregar();
@@ -4235,7 +4258,6 @@
       const mesAtual = ("0" + currentMonth).slice(-2);
       const anoAtual = currentYear;
       const vencimento = `${anoAtual}-${mesAtual}-${diaVencimento.padStart(2, '0')}`;
-      const competencia = `${mesAtual}/${anoAtual}`;
 
       if (!descricao || !valor || cartaoInfo.length < 2) {
         showToast('Preencha os campos obrigatorios!', 'warning');
@@ -4244,19 +4266,18 @@
 
       const dados = {
         linha,
-        id: linha,
         cartao: nomeCartao,
         titular: titularCartao,
         descricao,
         categoria,
         valor,
         vencimento,
-        competencia
+        totalParcelas: "1"
       };
 
       showLoading();
       try {
-        await apiFetch('/api/cartoes', 'POST', dados);
+        await callAppsScript('editarCartao', dados);
         showToast('Gasto atualizado!', 'success');
         editingRowId = null;
         await carregar();
@@ -4279,7 +4300,7 @@
       showActionModal(msg, async function () {
         showLoading();
         try {
-          await apiFetch('/api/limpar', 'POST', { tipo });
+          await callAppsScript('limparDados', { tipo });
           showToast('Simulações limpas com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4298,7 +4319,7 @@
         async function () {
           showLoading();
           try {
-            await apiFetch('/api/cartoes/atualizar-fatura', 'POST', { competencia });
+            await callAppsScript('atualizarFaturaCompetencia', { competencia });
             showToast(`Faturas atualizadas!`, 'success');
             await carregar();
           } catch (error) {
@@ -4318,8 +4339,7 @@
       showActionModal(`Deseja marcar "${item.descricao}" como pago?`, async function () {
         showLoading();
         try {
-          const dados = { ...item, id: l, status: 'Pago', valor: Number(item.valor) };
-          await apiFetch('/api/despesas', 'POST', dados);
+          await callAppsScript('marcarComoPago', { linha: l });
           showToast('Item marcado como pago!', 'success');
           await carregar();
         } catch (error) {
@@ -4337,8 +4357,7 @@
       showActionModal(`Deseja reverter "${item.descricao}" para "Em aberto"?`, async function () {
         showLoading();
         try {
-          const dados = { ...item, id: l, status: 'Em aberto', valor: Number(item.valor) };
-          await apiFetch('/api/despesas', 'POST', dados);
+          await callAppsScript('reverterPagamento', { linha: l });
           showToast('Item revertido para em aberto!', 'success');
           await carregar();
         } catch (error) {
@@ -4356,7 +4375,7 @@
       showActionModal(`Deseja realmente excluir "${item.descricao}"?`, async function () {
         showLoading();
         try {
-          await apiFetch(`/api/despesas/${l}`, 'DELETE');
+          await callAppsScript('excluirDespesa', { linha: l });
           showToast('Item excluído com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4374,7 +4393,7 @@
       showActionModal(`Deseja realmente excluir a receita "${item.descricao}"?`, async function () {
         showLoading();
         try {
-          await apiFetch(`/api/receitas/${l}`, 'DELETE');
+          await callAppsScript('excluirReceita', { linha: l });
           showToast('Receita excluída com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4392,7 +4411,7 @@
       showActionModal(`Deseja realmente excluir "${item.descricao}" do cartão ${item.cartao}?`, async function () {
         showLoading();
         try {
-          await apiFetch(`/api/cartoes/${l}`, 'DELETE');
+          await callAppsScript('excluirGastoCartao', { linha: l });
           showToast('Gasto excluído com sucesso!', 'success');
           await carregar();
         } catch (error) {
@@ -4420,7 +4439,7 @@
     // ==================== CONFIGURAÇÕES ====================
     async function carregarConfigs() {
       try {
-        const res = await apiFetch('/api/configs');
+        const res = await callAppsScript('buscarConfigs');
         configApp = res || { titulares: [], cartoes: [], categorias: [] };
         renderizarConfigScreen();
         atualizarSelectsDinamicos();
@@ -4455,8 +4474,7 @@
       if (tipo === 'titulares') {
         novosDados = {
           nome: document.getElementById('edit-config-nome').value,
-          foto: document.getElementById('edit-config-foto').value,
-          senha: document.getElementById('edit-config-senha').value
+          foto: document.getElementById('edit-config-foto').value // Mantém o valor atual se não houver campo de edição de foto aqui
         };
       } else if (tipo === 'cartoes') {
         novosDados = [
@@ -4474,7 +4492,7 @@
 
       showLoading();
       try {
-        const res = await apiFetch('/api/configs', 'POST', { tipo, linha, id: linha, valor: novosDados });
+        const res = await callAppsScript('editarConfigItem', { tipo, linha, valor: novosDados });
         configApp = res;
         editingConfigType = null;
         editingConfigLine = null;
@@ -4504,21 +4522,13 @@
         if (editingConfigType === 'titulares' && editingConfigLine === linha) {
           return `
             <li class="list-group-item editing-row">
-              <div class="inline-edit-row">
-                <div class="row g-2 w-100 align-items-center">
-                  <div class="col-5">
-                    <input type="text" id="edit-config-nome" class="form-control form-control-sm" value="${nome}"
-                           onkeydown="handleConfigKey(event, 'titulares', ${linha})">
-                  </div>
-                  <div class="col-4">
-                    <input type="password" id="edit-config-senha" class="form-control form-control-sm" placeholder="Nova Senha"
-                           onkeydown="handleConfigKey(event, 'titulares', ${linha})">
-                  </div>
-                  <input type="hidden" id="edit-config-foto" value="${foto}">
-                  <div class="col-3 d-flex justify-content-end gap-2">
-                    <button class="inline-save-btn" onclick="salvarEdicaoConfig('titulares', ${linha})"><i class="fa-solid fa-check"></i></button>
-                    <button class="inline-cancel-btn" onclick="cancelarEdicaoConfig()"><i class="fa-solid fa-times"></i></button>
-                  </div>
+              <div class="d-flex align-items-center gap-2 w-100">
+                <input type="text" id="edit-config-nome" class="form-control form-control-sm" value="${nome}" 
+                       onkeydown="handleConfigKey(event, 'titulares', ${linha})">
+                <input type="hidden" id="edit-config-foto" value="${foto}">
+                <div class="inline-edit-actions">
+                  <button class="inline-save-btn" onclick="salvarEdicaoConfig('titulares', ${linha})"><i class="fa-solid fa-check"></i></button>
+                  <button class="inline-cancel-btn" onclick="cancelarEdicaoConfig()"><i class="fa-solid fa-times"></i></button>
                 </div>
               </div>
             </li>
@@ -4700,7 +4710,7 @@
       showActionModal(mensagem, async function () {
         showLoading();
         try {
-          const res = await apiFetch(`/api/configs/${tipo}?valor=${encodeURIComponent(valor)}`, 'DELETE');
+          const res = await callAppsScript('removerConfigItem', { tipo, valor });
           configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
           renderizarConfigScreen();
           atualizarSelectsDinamicos();
@@ -4727,7 +4737,7 @@
       showLoading();
       try {
         const base64 = await comprimirEConverterBase64(file);
-        const res = await apiFetch('/api/configs', 'POST', {
+        const res = await callAppsScript('salvarConfigItem', {
           tipo: 'titulares',
           valor: { nome: titularParaUpload, foto: base64 }
         });
@@ -4797,7 +4807,7 @@
 
       showLoading();
       try {
-        const res = await apiFetch('/api/configs', 'POST', { tipo, valor });
+        const res = await callAppsScript('salvarConfigItem', { tipo, valor });
         configApp = res || { titulares: ["Noádia", "Pablo", "Casa"], cartoes: [], categorias: [] };
         renderizarConfigScreen();
         atualizarSelectsDinamicos();
@@ -4869,7 +4879,7 @@
       errorDiv.style.display = "none";
 
       try {
-        const res = await apiFetch('/api/login', 'POST', { usuario: user, senha: pass });
+        const res = await callAppsScript('verificarLogin', { usuario: user, senha: pass });
         if (res.sucesso) {
           localStorage.setItem('usuarioLogado', res.usuario);
           document.getElementById('view-login').style.display = 'none';
@@ -4889,10 +4899,7 @@
           errorDiv.style.display = "block";
         }
       } catch (error) {
-        console.error('Erro no login:', error);
-        errorDiv.innerText = error.message.includes('requisicao') 
-          ? "Erro no servidor. Tente novamente em instantes." 
-          : "Erro de conexão. Verifique sua internet.";
+        errorDiv.innerText = "Erro ao conectar com o servidor";
         errorDiv.style.display = "block";
       } finally {
         btn.disabled = false;
@@ -4970,7 +4977,7 @@
               status.classList.add('visible');
             }
             try {
-              await apiFetch('/api/notas', 'POST', { nota: notesArea.value });
+              await callAppsScript('salvarNotaDashboard', { nota: notesArea.value });
               if (status) {
                 status.innerText = "Salvo!";
                 setTimeout(() => status.classList.remove('visible'), 2000);
